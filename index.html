@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แจ้งเหตุด่วน</title>
+  <meta name="theme-color" content="#d32f2f">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      background:#c62828;color:#fff;font-family:-apple-system,system-ui,sans-serif;
+      min-height:100vh;display:flex;flex-direction:column;
+    }
+    .header{
+      text-align:center;padding:50px 20px;background:rgba(0,0,0,0.25);
+    }
+    .header h1{font-size:4.2rem;font-weight:900}
+    .header p{font-size:1.9rem;margin-top:10px}
+
+    .info{
+      background:rgba(255,255,255,0.22);margin:25px 20px;padding:30px;
+      border-radius:30px;border:6px dashed rgba(255,255,255,0.5);
+      text-align:center;
+    }
+    .info p{font-size:1.7rem;margin-bottom:25px;color:#ffcccc}
+    input,textarea{
+      width:100%;padding:22px;margin:15px 0;border:none;border-radius:22px;
+      font-size:1.7rem;background:rgba(255,255,255,0.25);color:#fff;
+    }
+    input::placeholder,textarea::placeholder{color:#ffaaaa}
+
+    .grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:20px;
+      flex:1;overflow-y:auto;
+    }
+    .btn{
+      background:rgba(255,255,255,0.32);border:10px solid #fff;
+      border-radius:50px;padding:45px 15px;font-size:1.9rem;font-weight:900;
+      text-align:center;box-shadow:0 30px 70px rgba(0,0,0,0.6);
+      transition:all 0.3s;cursor:pointer;
+    }
+    .btn i{font-size:6rem;margin-bottom:20px;display:block}
+    .btn:active{transform:scale(0.93)}
+    .btn.selected{
+      background:#fff;color:#c62828;transform:scale(0.97);
+      box-shadow:0 0 120px rgba(255,255,255,1);
+    }
+
+    #send{
+      background:#4caf50;color:#fff;font-size:8rem;font-weight:900;
+      padding:110px 20px;margin:50px 40px;border-radius:70px;
+      text-align:center;box-shadow:0 60px 140px rgba(0,0,0,0.8);
+      animation:pulse 2s infinite;cursor:pointer;
+    }
+    #send.disabled{
+      background:#777;color:#333;animation:none;cursor:not-allowed;opacity:0.7;
+    }
+    @keyframes pulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.07)}
+    }
+
+    .done{
+      position:fixed;top:0;left:0;right:0;bottom:0;background:#1b5e20;
+      display:none;align-items:center;justify-content:center;flex-direction:column;
+      font-size:7rem;text-align:center;z-index:9999;
+    }
+    .done.show{display:flex}
+    .done i{font-size:18rem;color:#4caf50;margin-bottom:50px}
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>แจ้งเหตุด่วน</h1>
+    <p>เปิด GPS หรือใส่เบอร์โทรก็แจ้งได้เลย</p>
+  </div>
+
+  <div class="info">
+    <p>กรอกอย่างใดอย่างหนึ่งก็พอ</p>
+    <input type="text" id="name" placeholder="ชื่อ-สกุล (ไม่บังคับ)">
+    <input type="tel" id="phone" placeholder="เบอร์โทรศัพท์">
+    <textarea id="note" rows="3" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+  </div>
+
+  <div class="grid">
+    <div class="btn" data-type="อาหารและน้ำ"><i class="fas fa-utensils"></i><br>อาหาร/น้ำ</div>
+    <div class="btn" data-type="ติดอยู่ในพื้นที่"><i class="fas fa-person-walking-arrow-right"></i><br>ติดอยู่ในพื้นที่</div>
+    <div class="btn" data-type="กำลังจมน้ำ"><i class="fas fa-water"></i><br>กำลังจมน้ำ</div>
+    <div class="btn" data-type="เจ็บป่วย"><i class="fas fa-heartbeat"></i><br>เจ็บป่วย</div>
+    <div class="btn" data-type="มีเด็ก"><i class="fas fa-baby"></i><br>มีเด็ก</div>
+    <div class="btn" data-type="มีผู้สูงอายุ"><i class="fas fa-user"></i><br>มีผู้สูงอายุ</div>
+    <div class="btn" data-type="สัตว์เลี้ยง"><i class="fas fa-dog"></i><br>สัตว์เลี้ยง</div>
+    <div class="btn" data-type="มีผู้เสียชีวิต"><i class="fas fa-cross"></i><br>มีผู้เสียชีวิต</div>
+  </div>
+
+  <div id="send" class="disabled">แจ้งเหตุ</div>
+
+  <div class="done" id="done">
+    <i class="fas fa-check-circle"></i>
+    <div>แจ้งสำเร็จแล้ว!<br>ทีมกู้ภัยกำลังมา</div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"
+    });
+    const db = firebase.database();
+
+    const sendBtn = document.getElementById('send');
+    const phone = document.getElementById('phone');
+    const done = document.getElementById('done');
+    let pos = null;
+    let selected = [];
+
+    // ดึง GPS อัตโนมัติ
+    navigator.geolocation.getCurrentPosition(
+      p => { pos = {lat:p.coords.latitude, lng:p.coords.longitude}; check(); },
+      () => check(),
+      {enableHighAccuracy:true, timeout:20000}
+    );
+
+    // เลือกประเภท
+    document.querySelectorAll('.btn').forEach(b => {
+      b.addEventListener('click', () => {
+        b.classList.toggle('selected');
+        selected = Array.from(document.querySelectorAll('.btn.selected')).map(x => x.dataset.type);
+      });
+    });
+
+    // ตรวจสอบว่าส่งได้หรือยัง
+    function check() {
+      const ok = pos || phone.value.trim().length >= 9;
+      sendBtn.classList.toggle('disabled', !ok);
+    }
+    phone.addEventListener('input', check);
+
+    // ส่งข้อมูล
+    sendBtn.addEventListener('click', () => {
+      if (sendBtn.classList.contains('disabled')) return;
+
+      const data = {
+        types: selected.length ? selected : ["ขอความช่วยเหลือด่วน"],
+        priority: selected.includes("มีผู้เสียชีวิต") || selected.includes("กำลังจมน้ำ") ? 5 :
+                  selected.includes("เจ็บป่วย") ? 4 : 3,
+        timestamp: Date.now(),
+        status: "pending"
+      };
+
+      if (pos) {
+        data.location = pos;
+        data.address = "พิกัดจากโทรศัพท์";
+      }
+      if (document.getElementById('name').value.trim()) data.name = document.getElementById('name').value.trim();
+      if (phone.value.trim()) data.phone = phone.value.trim();
+      if (document.getElementById('note').value.trim()) data.note = document.getElementById('note').value.trim();
+
+      db.ref("sos_requests").push(data);
+      done.classList.add('show');
+    });
+  </script>
+</body>
+</html>
