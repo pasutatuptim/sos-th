@@ -5,153 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#c62828">
   <title>แจ้งเหตุด่วน 1669</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{background:#c62828;color:#fff;font-family:-apple-system,system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-    .container{flex:1;overflow-y:auto;padding-bottom:120px}
-    .header{text-align:center;padding:2.8rem 1.5rem 2rem;background:rgba(0,0,0,0.25);border-radius:0 0 30px 30px}
+    body{background:#c62828;color:#fff;font-family:-apple-system,system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+    
+    /* ส่วนที่เลื่อนได้ */
+    .scroll-container{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:100px}
+    
+    .header{text-align:center;padding:50px 20px 30px;background:rgba(0,0,0,0.25);border-radius:0 0 30px 30px}
     .header h1{font-size:2.8rem;font-weight:900}
-    .header p{font-size:1.35rem;margin-top:8px}
+    .header p{font-size:1.35rem;margin-top:10px}
 
-    #gpsBtn{margin:1.5rem 2rem;padding:1.8rem;background:#ffeb3b;color:#c62828;border-radius:30px;font-size:1.8rem;font-weight:900;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.5);cursor:pointer;animation:pulse-y 2s infinite}
-    @keyframes pulse-y{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+    #gpsBtn{margin:20px;padding:24px;background:#ffeb3b;color:#c62828;border-radius:30px;font-size:1.8rem;font-weight:900;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 
-    .info{margin:1rem 1.5rem 0;padding:1.5rem;background:rgba(255,255,255,0.18);border-radius:25px;border:4px dashed rgba(255,255,255,0.4);text-align:center}
-    input,textarea{width:100%;padding:16px;margin:10px 0;border:none;border-radius:16px;font-size:1.25rem;background:rgba(255,255,255,0.22);color:#fff}
+    .info{margin:15px;padding:20px;background:rgba(255,255,255,0.18);border-radius:25px;border:4px dashed rgba(255,255,255,0.4);text-align:center}
+    input,textarea{width:100%;padding:18px;margin:12px 0;border:none;border-radius:18px;font-size:1.4rem;background:rgba(255,255,255,0.22);color:#fff}
     input::placeholder,textarea::placeholder{color:#ffaaaa}
 
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}
-    .btn{background:rgba(255,255,255,0.28);border:8px solid #fff;border-radius:32px;padding:28px 12px;font-size:1.35rem;font-weight:900;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.5);transition:0.25s;cursor:pointer}
-    .btn i{font-size:3.8rem;margin-bottom:12px;display:block}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}
+    .btn{background:rgba(255,255,255,0.28);border:10px solid #fff;border-radius:35px;padding:35px 15px;font-size:1.4rem;font-weight:900;text-align:center;box-shadow:0 15px 40px rgba(0,0,0,0.5);transition:0.25s;cursor:pointer}
+    .btn i{font-size:4.2rem;margin-bottom:15px;display:block}
     .btn:active{transform:scale(0.94)}
-    .btn.selected{background:#fff;color:#c62828;box-shadow:0 0 60px rgba(255,255,255,0.9);transform:scale(0.97)}
+    .btn.selected{background:#fff;color:#c62828;box-shadow:0 0 70px rgba(255,255,255,0.9);transform:scale(0.97)}
 
-    #send{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 60px);max-width:500px;padding:32px;background:#4caf50;color:#fff;font-size:3.8rem;font-weight:900;text-align:center;border-radius:40px;box-shadow:0 20px 50px rgba(0,0,0,0.7);z-index:99;animation:pulse 2s infinite;cursor:pointer}
+    /* ปุ่มแจ้งเหตุ ติดล่างสุด ไม่บัง */
+    #send{position:fixed;bottom:20px;left:30px;right:30px;padding:32px;background:#4caf50;color:#fff;font-size:3.8rem;font-weight:900;text-align:center;border-radius:40px;box-shadow:0 20px 50px rgba(0,0,0,0.7);z-index:99;animation:pulse2 2s infinite;cursor:pointer}
     #send.disabled{background:#666;color:#333;animation:none;opacity:0.6;cursor:not-allowed}
-    @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}}
+    @keyframes pulse2{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 
-    /* หน้า สำเร็จ เต็มจอสวยสุด */
-    #success{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#1b5e20,#2e7d32);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:99999;text-align:center;animation:fade 0.8s}
-    #success.show{display:flex}
-    @keyframes fade{from{opacity:0}to{opacity:1}
-    #success i{font-size:18rem;color:#4caf50;margin-bottom:2rem;animation:bounce 2s infinite}
+    /* หน้า สำเร็จ เต็มจอ */
+    #success{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#1b5e20,#2e7d32);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:99999;text-align:center}
+    #success.show{display:flex;animation:fade 0.6s}
+    @keyframes fade{from{opacity:0}to{opacity:1}}
+    #success i{font-size:20rem;color:#4caf50;margin-bottom:30px;animation:bounce 2s infinite}
     @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-40px)}}
-    #success h2{font-size:6rem;font-weight:900;margin:2rem;line-height:1.2}
-    #success p{font-size:2.8rem;margin:2rem 3rem 4rem}
-    #success button{background:#fff;color:#1b5e20;padding:1.8rem 4rem;border:none;border-radius:50px;font-size:2.2rem;font-weight:900;cursor:pointer}
+    #success h2{font-size:6.5rem;font-weight:900;margin:20px;line-height:1.2}
+    #success p{font-size:3rem;margin:30px}
+    #success button{background:#fff;color:#1b5e20;padding:20px 50px;border:none;border-radius:50px;font-size:2.4rem;font-weight:900;cursor:pointer}
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="header">
-    <h1>แจ้งเหตุด่วน</h1>
-    <p>กดปุ่มเหลืองเพื่อเปิดตำแหน่ง (สำคัญสำหรับ iPhone)</p>
+  <div class="scroll-container">
+    <div class="header">
+      <h1>แจ้งเหตุด่วน</h1>
+      <p>กดปุ่มเหลืองเพื่อเปิดตำแหน่ง</p>
+    </div>
+
+    <div id="gpsBtn">
+      <i class="fas fa-location-arrow"></i><br>
+      กดที่นี่เพื่อเปิดตำแหน่ง
+    </div>
+
+    <div class="info">
+      <p>หรือใส่เบอร์โทรก็แจ้งได้ทันที</p>
+      <input type="text" id="name" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)">
+      <input type="tel" id="phone" placeholder="เบอร์โทรศัพท์">
+      <textarea id="note" rows="3" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+    </div>
+
+    <div class="grid">
+      <div class="btn" data-type="อาหารและน้ำ"><i class="fas fa-utensils"></i>อาหาร/น้ำ</div>
+      <div class="btn" data-type="ติดอยู่ในพื้นที่"><i class="fas fa-person-walking-arrow-right"></i>ติดอยู่ในพื้นที่</div>
+      <div class="btn" data-type="กำลังจมน้ำ"><i class="fas fa-water"></i>กำลังจมน้ำ</div>
+      <div class="btn" data-type="เจ็บป่วย"><i class="fas fa-heartbeat"></i>เจ็บป่วย</div>
+      <div class="btn" data-type="มีเด็ก"><i class="fas fa-baby"></i>มีเด็ก</div>
+      <div class="btn" data-type="มีผู้สูงอายุ"><i class="fas fa-user"></i>มีผู้สูงอายุ</div>
+      <div class="btn" data-type="สัตว์เลี้ยง"><i class="fas fa-dog"></i>สัตว์เลี้ยง</div>
+      <div class="btn" data-type="มีผู้เสียชีวิต"><i class="fas fa-cross"></i>มีผู้เสียชีวิต</div>
+    </div>
   </div>
 
-  <div id="gpsBtn">
-    <i class="fas fa-location-arrow"></i><br>
-    กดที่นี่เพื่อเปิดตำแหน่ง
+  <div id="send" class="disabled">แจ้งเหตุ</div>
+
+  <div id="success">
+    <i class="fas fa-check-circle"></i>
+    <h2>แจ้งสำเร็จแล้ว!</h2>
+    <p>ทีมกู้ภัยกำลังมา</p>
+    <button onclick="location.reload()">กลับหน้าหลัก</button>
   </div>
 
-  <div class="info">
-    <p>หรือใส่เบอร์โทรก็แจ้งได้ทันที</p>
-    <input type="text" id="name" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)">
-    <input type="tel" id="phone" placeholder="เบอร์โทรศัพท์">
-    <textarea id="note" rows="2" placeholder="รายละเอียดเพิ่มเติม"></textarea>
-  </div>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({ databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app" });
+    const db = firebase.database();
 
-  <div class="grid">
-    <div class="btn" data-type="อาหารและน้ำ"><i class="fas fa-utensils"></i>อาหาร/น้ำ</div>
-    <div class="btn" data-type="ติดอยู่ในพื้นที่"><i class="fas fa-person-walking-arrow-right"></i>ติดอยู่ในพื้นที่</div>
-    <div class="btn" data-type="กำลังจมน้ำ"><i class="fas fa-water"></i>กำลังจมน้ำ</div>
-    <div class="btn" data-type="เจ็บป่วย"><i class="fas fa-heartbeat"></i>เจ็บป่วย</div>
-    <div class="btn" data-type="มีเด็ก"><i class="fas fa-baby"></i>มีเด็ก</div>
-    <div class="btn" data-type="มีผู้สูงอายุ"><i class="fas fa-user"></i>มีผู้สูงอายุ</div>
-    <div class="btn" data-type="สัตว์เลี้ยง"><i class="fas fa-dog"></i>สัตว์เลี้ยง</div>
-    <div class="btn" data-type="มีผู้เสียชีวิต"><i class="fas fa-cross"></i>มีผู้เสียชีวิต</div>
-  </div>
-</div>
+    const gpsBtn = document.getElementById('gpsBtn');
+    const sendBtn = document.getElementById('send');
+    const phone = document.getElementById('phone');
+    const success = document.getElementById('success');
+    let position = null;
+    let types = [];
 
-<div id="send" class="disabled">แจ้งเหตุ</div>
-
-<div id="success">
-  <i class="fas fa-check-circle"></i>
-  <h2>แจ้งสำเร็จแล้ว!</h2>
-  <p>ทีมกู้ภัยกำลังมา</p>
-  <button onclick="location.reload()">กลับหน้าหลัก</button>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script>
-  firebase.initializeApp({ databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app" });
-  const db = firebase.database();
-
-  const gpsBtn = document.getElementById('gpsBtn');
-  const sendBtn = document.getElementById('send');
-  const phone = document.getElementById('phone');
-  const success = document.getElementById('success');
-  let position = null;
-  let types = [];
-
-  // เปิด GPS (สำคัญสำหรับ iPhone)
-  gpsBtn.onclick = () => {
-    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><br>กำลังขอตำแหน่ง...';
-    navigator.geolocation.getCurrentPosition(
-      p => {
-        position = {lat: p.coords.latitude, lng: p.coords.longitude};
-        gpsBtn.innerHTML = '<i class="fas fa-check-circle"></i><br>ตำแหน่งพร้อมแล้ว!';
-        gpsBtn.style.background = '#4caf50';
-        gpsBtn.style.color = '#fff';
-        checkReady();
-      },
-      () => {
-        gpsBtn.innerHTML = '<i class="fas fa-location-arrow"></i><br>กดอีกครั้งเพื่อเปิดตำแหน่ง';
-        alert('กรุณากด "อนุญาต" เมื่อ Safari ถามตำแหน่ง');
-      },
-      {enableHighAccuracy: true, timeout: 15000}
-    );
-  };
-
-  // เลือกประเภท
-  document.querySelectorAll('.btn').forEach(b => {
-    b.onclick = () => {
-      b.classList.toggle('selected');
-      types = Array.from(document.querySelectorAll('.btn.selected')).map(x => x.dataset.type);
+    gpsBtn.onclick = () => {
+      gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><br>กำลังขอตำแหน่ง...';
+      navigator.geolocation.getCurrentPosition(
+        p => {
+          position = {lat: p.coords.latitude, lng: p.coords.longitude};
+          gpsBtn.innerHTML = '<i class="fas fa-check-circle"></i><br>ตำแหน่งพร้อมแล้ว!';
+          gpsBtn.style.background = '#4caf50';
+          gpsBtn.style.color = '#fff';
+          checkReady();
+        },
+        () => {
+          gpsBtn.innerHTML = '<i class="fas fa-location-arrow"></i><br>กดอีกครั้งเพื่อเปิดตำแหน่ง';
+          alert('กรุณากด "อนุญาต" เมื่อ Safari ถามตำแหน่ง');
+        },
+        {enableHighAccuracy: true, timeout: 15000}
+      );
     };
-  });
 
-  // เช็คว่าพร้อมส่งไหม
-  function checkReady() {
-    const ready = position || phone.value.trim().length >= 9;
-    sendBtn.classList.toggle('disabled', !ready);
-  }
-  phone.addEventListener('input', checkReady);
+    document.querySelectorAll('.btn').forEach(b => {
+      b.onclick = () => {
+        b.classList.toggle('selected');
+        types = Array.from(document.querySelectorAll('.btn.selected')).map(x => x.dataset.type);
+      };
+    });
 
-  // ส่งข้อมูล
-  sendBtn.onclick = () => {
-    if (sendBtn.classList.contains('disabled')) return;
+    function checkReady() {
+      const ready = position || phone.value.trim().length >= 9;
+      sendBtn.classList.toggle('disabled', !ready);
+    }
+    phone.addEventListener('input', checkReady);
 
-    const data = {
-      types: types.length ? types : ["ขอความช่วยเหลือด่วน"],
-      priority: types.includes("มีผู้เสียชีวิต") || types.includes("กำลังจมน้ำ") ? 5 :
-                types.includes("เจ็บป่วย") ? 4 : 3,
-      timestamp: Date.now(),
-      status: "pending"
+    sendBtn.onclick = () => {
+      if (sendBtn.classList.contains('disabled')) return;
+
+      const data = {
+        types: types.length ? types : ["ขอความช่วยเหลือด่วน"],
+        priority: types.includes("มีผู้เสียชีวิต") || types.includes("กำลังจมน้ำ") ? 5 :
+                  types.includes("เจ็บป่วย") ? 4 : 3,
+        timestamp: Date.now(),
+        status: "pending"
+      };
+      if (position) data.location = position;
+      if (document.getElementById('name').value.trim()) data.name = document.getElementById('name').value.trim();
+      if (phone.value.trim()) data.phone = phone.value.trim();
+      if (document.getElementById('note').value.trim()) data.note = document.getElementById('note').value.trim();
+
+      db.ref("sos_requests").push(data);
+      success.classList.add('show');
+      if (navigator.vibrate) navigator.vibrate([800,400,800]);
     };
-    if (position) { data.location = position; data.address = "พิกัดจากโทรศัพท์"; }
-    if (document.getElementById('name').value.trim()) data.name = document.getElementById('name').value.trim();
-    if (phone.value.trim()) data.phone = phone.value.trim();
-    if (document.getElementById('note').value.trim()) data.note = document.getElementById('note').value.trim();
-
-    db.ref("sos_requests").push(data);
-    success.classList.add('show');
-    if (navigator.vibrate) navigator.vibrate([800,400,800]);
-  };
-</script>
+  </script>
 </body>
 </html>
