@@ -3,33 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ศูนย์สั่งการ 1669 (ใช้งานได้จริง 100%)</title>
-
-  <!-- Leaflet ก่อนเลย -->
+  <title>ศูนย์สั่งการ 1669 – ลิสต์เล็กจุใจ</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
     body{background:#000;color:#fff;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-    #map{flex:1;width:100%}
-    .header{background:#c62828;padding:20px;text-align:center;font-weight:900;font-size:1.7rem;position:relative}
-    .count{position:absolute;right:20px;top:20px;background:#fff;color:#c62828;padding:10px 16px;border-radius:30px;font-weight:900}
-    .sound-btn{position:absolute;left:20px;top:20px;background:#333;padding:10px 16px;border-radius:30px;cursor:pointer}
-    #sidebar{width:100%;max-width:440px;background:#111;overflow-y:auto;padding:15px;border-right:3px solid #333}
+    #map{flex:1}
+    .header{background:#c62828;padding:15px;text-align:center;font-weight:900;font-size:1.5rem;position:relative}
+    .count{position:absolute;right:15px;top:13px;background:#fff;color:#c62828;padding:6px 12px;border-radius:20px;font-size:0.9rem;font-weight:900}
+    .sound{position:absolute;left:15px;top:13px;background:#333;padding:6px 12px;border-radius:20px;font-size:0.8rem;cursor:pointer}
     .container{display:flex;flex:1;overflow:hidden}
-    .case{background:linear-gradient(135deg,#1e1e1e,#111);margin:15px;border-radius:20px;padding:22px;border-left:8px solid #ff1744;box-shadow:0 8px 30px rgba(0,0,0,0.8);transition:0.3s}
-    .case:hover{transform:translateY(-5px);background:#252525}
-    .case-id{font-size:1.7rem;font-weight:900;background:#fff;color:#c62828;padding:8px 16px;border-radius:16px;display:inline-block}
-    .btn{padding:12px 20px;border:none;border-radius:25px;font-weight:900;cursor:pointer;margin:6px 4px;font-size:1rem}
+    #sidebar{width:100%;max-width:380px;background:#111;overflow-y:auto;padding:8px 0}
+    .case{background:#1a1a1a;margin:6px 10px;padding:10px 14px;border-radius:12px;border-left:5px solid #ff1744;
+         box-shadow:0 3px 10px rgba(0,0,0,0.6);transition:0.2s;cursor:pointer;font-size:0.92rem}
+    .case:hover{background:#222;transform:translateY(-1px)}
+    .case-id{font-size:1.25rem;font-weight:900;color:#fff;background:#c62828;padding:3px 10px;border-radius:10px;display:inline-block}
+    .types{color:#ff9800;font-weight:700;margin:4px 0}
+    .info{line-height:1.4;opacity:0.95}
+    .noloc{color:#ff6b6b;font-size:0.85rem}
+    .btns{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+    .btn{padding:6px 12px;border:none;border-radius:16px;font-weight:900;font-size:0.8rem}
     .going{background:#ff9800;color:#000}
     .success{background:#4caf50;color:#fff}
     .cannot{background:#f44336;color:#fff}
     .nav{background:#2196f3;color:#fff}
     .call{background:#00c853;color:#fff}
-    .alert{position:fixed;top:30px;left:50%;transform:translateX(-50%);background:#ff1744;color:#fff;padding:20px 50px;border-radius:50px;font-size:1.8rem;font-weight:900;z-index:9999;box-shadow:0 20px 60px rgba(255,23,68,0.8);animation:p 0.8s}
-    @keyframes p{0%{opacity:0;transform:translateX(-50%) translateY(-100px) scale(0.5)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-    @media(max-width:900px){.container{flex-direction:column}#sidebar{height:50%}}
+    .alert{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff1744;color:#fff;padding:14px 40px;border-radius:50px;font-size:1.4rem;font-weight:900;z-index:9999;animation:a 0.7s}
+    @keyframes a{0%{opacity:0;transform:translateX(-50%) translateY(-100px)}100%{opacity:1;transform:translateX(-50%) translateY(0)}}
+    @media(max-width:900px){.container{flex-direction:column}#sidebar{height:45%}}
   </style>
 </head>
 <body>
@@ -37,110 +39,78 @@
 <div class="header">
   ศูนย์สั่งการกู้ภัย 1669
   <div class="count" id="count">0</div>
-  <div class="sound-btn" id="soundBtn" onclick="soundEnabled=!soundEnabled;this.textContent=soundEnabled?'เปิดเสียง':'ปิดเสียง';this.style.background=soundEnabled?'#4caf50':'#666'">เปิดเสียง</div>
+  <div class="sound" id="soundBtn" onclick="soundEnabled=!soundEnabled;this.textContent=soundEnabled?'เปิดเสียง':'ปิดเสียง';this.style.background=soundEnabled?'#4caf50':'#666'">เปิดเสียง</div>
 </div>
 
 <div class="container">
-  <div id="sidebar">กำลังเชื่อมต่อระบบ...</div>
+  <div id="sidebar">กำลังโหลด...</div>
   <div id="map"></div>
 </div>
 
 <script>
-// 1. สร้างแผนที่ทันที
-const map = L.map('map').setView([13.7563, 100.5018], 11);
+const map = L.map('map').setView([13.7563, 100.5018], 10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// 2. ระบบแจ้งเตือน
 let soundEnabled = true;
-const alertSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-alarm-1001.mp3');
-function notify(msg) {
-  const a = document.createElement('div');
-  a.className='alert';
-  a.textContent=msg;
-  document.body.appendChild(a);
-  setTimeout(()=>a.remove(),5000);
-  if(soundEnabled) alertSound.play();
-  if(navigator.vibrate) navigator.vibrate([700,300,700]);
-  new Notification("เคสใหม่!", {body: msg});
-}
+const beep = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-alarm-1001.mp3');
+function alertNew(t){const d=document.createElement('div');d.className='alert';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),4500);if(soundEnabled)beep.play();if(navigator.vibrate)navigator.vibrate([500,200,500]);new Notification("เคสใหม่!", {body:t});}
 Notification.requestPermission();
 
-// 3. รอ 1 วินาที แล้วเริ่ม Firebase (รับประกันทุกอย่างโหลดแล้ว)
-setTimeout(() => {
-  // Firebase
-  const script = document.createElement('script');
-  script.src = "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
-  document.head.appendChild(script);
-  script.onload = () => {
-    const script2 = document.createElement('script');
-    script2.src = "https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js";
-    document.head.appendChild(script2);
-    script2.onload = startFirebase;
+setTimeout(()=>{
+  const s1=document.createElement('script');s1.src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";document.head.appendChild(s1);
+  s1.onload=()=>{
+    const s2=document.createElement('script');s2.src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js";document.head.appendChild(s2);
+    s2.onload=main;
   };
-}, 1000);
+},1000);
 
-function startFirebase() {
-  firebase.initializeApp({databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"});
-  const db = firebase.database();
-  const sos = db.ref("sos_requests").orderByChild("timestamp");
-  const teams = db.ref("rescue_teams");
+function main(){
+  firebase.initializeApp({databaseURL:"https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"});
+  const ref = firebase.database().ref("sos_requests").orderByChild("timestamp");
 
   const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = '';
-  const markers = {};
-  const teamMarkers = {};
-  let count = 1;
+  sidebar.innerHTML='';
+  let n=1;
 
-  // ไอคอนทีมสุดชัด
-  function teamIcon(name, status="ว่าง") {
-    return L.divIcon({
-      html: `<svg width="56" height="70" viewBox="0 0 56 70"><rect x="6" y="16" width="44" height="36" rx="10" fill="white" stroke="#d32f2f" stroke-width="5"/><rect x="15" y="25" width="12" height="20" fill="#d32f2f"/><rect x="29" y="25" width="12" height="20" fill="#d32f2f"/><circle cx="28" cy="34" r="10" fill="#d32f2f"/><path d="M10 52 L28 64 L46 52 L46 58 L10 58 Z" fill="white" stroke="#d32f2f" stroke-width="4"/><text x="28" y="14" font-size="13" font-weight="900" fill="#00e5ff" text-anchor="middle">${name||'ทีม'}</text></svg><div style="background:#00e5ff;color:#000;padding:4px 12px;border-radius:15px;font-size:12px;margin-top:4px;font-weight:900">${status}</div>`,
-      iconSize: [56,85], iconAnchor: [28,80]
-    });
-  }
+  ref.on('child_added',s=>{
+    const d=s.val(), k=s.key;
+    const caseId = `เคส #${String(n++).padStart(3,'0')}`;
+    const types = Array.isArray(d.types)?d.types.join(' • '):d.types||'ขอความช่วยเหลือ';
 
-  // เคสใหม่
-  sos.on('child_added', s => {
-    const d = s.val(); const k = s.key;
-    if(!d.location) return;
-    const id = `เคส #${String(count++).padStart(3,'0')}`;
-    const type = Array.isArray(d.types)?d.types.join(' • '):d.types||'ขอความช่วยเหลือ';
-    notify(id + ' – ' + type);
+    alertNew(caseId + ' – ' + types);
 
-    const div = document.createElement('div');
-    div.className='case';
-    div.innerHTML = `<div class="case-id">${id}</div>
-      <div style="color:#ff9800;font-weight:700;font-size:1.3rem;margin:12px 0">${type}</div>
-      <div style="line-height:1.7">${d.name?'ชื่อ: '+d.name+'<br>':''}${d.phone?'เบอร์: '+d.phone+'<br>':''}${d.note?'หมายเหตุ: '+d.note:'ไม่มีหมายเหตุ'}</div>
-      <div style="margin-top:15px;display:flex;flex-wrap:wrap;gap:8px">
+    const card = document.createElement('div');
+    card.className='case';
+    card.innerHTML = `
+      <div class="case-id">${caseId}</div>
+      <div class="types">${types}</div>
+      <div class="info">
+        ${d.name?`ชื่อ: ${d.name}<br>`:''}
+        ${d.phone?`เบอร์: ${d.phone}<br>`:''}
+        ${d.note?`หมายเหตุ: ${d.note}`:'ไม่มีหมายเหตุ'}
+        ${!d.location?'<div class="noloc">ไม่มี GPS</div>':''}
+      </div>
+      <div class="btns">
         <button class="btn going" onclick="set('${k}','going')">กำลังไป</button>
-        <button class="btn success" onclick="set('${k}','success')">ช่วยสำเร็จ</button>
-        <button class="btn cannot" onclick="set('${k}','cannot')">ไม่สามารถช่วยได้</button>
-        <button class="btn nav" onclick="window.open('https://maps.google.com?q=${d.location.lat},${d.location.lng}')">นำทาง</button>
-        ${d.phone?`<button class="btn call" onclick="location.href='tel:${d.phone}'">โทร ${d.phone}</button>`:''}
-      </div>`;
-    div.onclick = e => {if(e.target.tagName!=='BUTTON') map.setView([d.location.lat,d.location.lng],18);};
-    sidebar.insertBefore(div, sidebar.firstChild);
+        <button class="btn success" onclick="set('${k}','success')">สำเร็จ</button>
+        <button class="btn cannot" onclick="set('${k}','cannot')">ไม่สามารถ</button>
+        ${d.location?`<button class="btn nav" onclick="window.open('https://maps.google.com?q=${d.location.lat},${d.location.lng}')">นำทาง</button>`:''}
+        ${d.phone?`<button class="btn call" onclick="location.href='tel:${d.phone}'">โทร</button>`:''}
+      </div>
+    `;
 
-    const m = L.marker([d.location.lat,d.location.lng], {icon: L.divIcon({html:'<div style="background:#ff1744;width:22px;height:22px;border-radius:50%;box-shadow:0 0 25px #ff1744"></div>',iconSize:[22,22]})}).addTo(map);
-    markers[k] = {m, div};
-    document.getElementById('count').textContent = Object.keys(markers).length;
+    if(d.location){
+      card.onclick=e=>{if(e.target.tagName!=='BUTTON')map.setView([d.location.lat,d.location.lng],18);};
+      L.marker([d.location.lat,d.location.lng],{icon:L.divIcon({html:'<div style="background:#ff1744;width:20px;height:20px;border-radius:50%;box-shadow:0 0 20px 15px #ff1744"></div>',iconSize:[20,20]})}).addTo(map);
+    }else{
+      card.onclick=()=>{alert('ไม่มีตำแหน่ง GPS\nกรุณาโทรติดต่อ: '+(d.phone||'ไม่มีเบอร์'));}
+    }
+
+    sidebar.insertBefore(card, sidebar.firstChild);
+    document.getElementById('count').textContent = n-1;
   });
 
-  // ทีมกู้ภัย
-  teams.on('child_added', t=>updateTeam(t.key,t.val()));
-  teams.on('child_changed', t=>updateTeam(t.key,t.val()));
-  function updateTeam(k,d){
-    if(!d.lat||!d.lng) return;
-    if(teamMarkers[k]){
-      teamMarkers[k].setLatLng([d.lat,d.lng]).setIcon(teamIcon(d.name||"ทีม",d.status||"ว่าง"));
-    }else{
-      const m = L.marker([d.lat,d.lng],{icon:teamIcon(d.name||"ทีม",d.status||"ว่าง")}).addTo(map);
-      teamMarkers[k] = m;
-    }
-  }
-
-  window.set = (k,st) => db.ref("sos_requests/"+k).update({status:st});
+  window.set=(k,st)=>firebase.database().ref("sos_requests/"+k).update({status:st});
 }
 </script>
 </body>
