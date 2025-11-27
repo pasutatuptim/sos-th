@@ -3,390 +3,231 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ศูนย์กู้ภัยแห่งชาติ • ระบบแจ้งเหตุฉุกเฉิน</title>
+  <title>ศูนย์กู้ภัยแห่งชาติ • แจ้งเตือน Real-time 2025</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.2/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.2/dist/MarkerCluster.Default.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary: #d32f2f;
-      --urgent: #c62828;
-      --high: #ff6f00;
-      --normal: #43a047;
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #e2e8f0;
-      --border: #334155;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body, html { height:100%; font-family:'Sarabun',sans-serif; background:#020617; color:var(--text); overflow:hidden; }
-    
-    .header {
-      background: linear-gradient(135deg, #b71c1c, #d32f2f);
-      padding: 18px 24px;
-      text-align:center;
-      font-size:2rem;
-      font-weight:800;
-      color:white;
-      box-shadow:0 4px 20px rgba(198,40,40,0.4);
-      position:relative;
-      z-index:10;
-    }
-    .header i { margin-right:12px; }
+    :root{--red:#c62828;--p5:#ff1744;--p4:#ff9100;--p3:#43a047;--bg:#0f172a;--card:#1e293b;--text:#e2e8f0}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body,html{height:100%;font-family:'Sarabun',sans-serif;background:#020617;color:var(--text);overflow:hidden}
+    .header{background:linear-gradient(135deg,#b71c1c,#d32f2f);padding:20px;text-align:center;font-size:2.1rem;color:white;font-weight:900;position:fixed;top:0;width:100%;z-index:1000}
+    .container{margin-top:80px;display:flex;height:calc(100vh - 80px)}
+    .sidebar{width:480px;background:var(--bg);border-right:7px solid var(--red);display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .stats{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#1e1b4b}
+    .stat{background:rgba(139,92,246,0.25);padding:16px;border-radius:14px;text-align:center;border:1px solid #334155}
+    .num{font-size:2.4rem;font-weight:900;color:#a78bfa}
+    .tabs{display:flex}
+    .tab{flex:1;padding:18px;text-align:center;cursor:pointer;background:#334155;color:white;font-weight:700;font-size:1.1rem}
+    .tab.active{background:var(--red)}
+    .list{flex:1;overflow-y:auto;padding:14px}
+    .card{background:var(--card);border-radius:16px;padding:18px;margin-bottom:14px;border-left:8px solid #64748b;cursor:pointer;transition:0.3s;box-shadow:0 6px 20px rgba(0,0,0,0.5)}
+    .card:hover{transform:translateY(-8px);box-shadow:0 15px 40px rgba(0,0,0,0.7)}
+    .card.p5{border-left-color:var(--p5);background:#330011;animation:glow5 1.5s infinite}
+    .card.p4{border-left-color:var(--p4)}
+    .card.p3{border-left-color:var(--p3)}
+    @keyframes glow5{0%,100%{box-shadow:0 6px 20px rgba(255,23,68,0.4)}50%{box-shadow:0 10px 50px rgba(255,23,68,1)}}
+    .prio{width:70px;height:70px;border-radius:50%;background:var(--red);color:white;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:900;margin-right:16px;float:left}
+    .p5 .prio{background:var(--p5);animation:pulse5 1s infinite}
+    @keyframes pulse5{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+    .card h3{font-size:1.35rem;margin-bottom:8px}
+    .meta{color:#94a3b8;font-size:0.95rem;margin-bottom:8px}
+    .actions{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .btn{padding:14px;border:none;border-radius:14px;color:white;font-weight:700;cursor:pointer;transition:0.2s;font-size:1rem}
+    .btn-call{background:#1b5e20}
+    .btn-nav{background:#1565c0}
+    .btn-done{background:#6d28d9}
+    #map{flex:1}
+    .bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(15,23,42,0.98);padding:14px;text-align:center;color:#e2e8f0;font-weight:700;z-index:999;border-top:3px solid var(--red)}
 
-    .container {
-      display:flex;
-      height:calc(100vh - 76px);
-    }
-
-    .sidebar {
-      width:460px;
-      background:var(--bg);
-      border-right:4px solid var(--primary);
-      display:flex;
-      flex-direction:column;
-      box-shadow: 4px 0 25px rgba(0,0,0,0.6);
-      transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
-    }
-    .sidebar.collapsed { transform:translateX(-100%); }
-
-    .stats {
-      background:#1e1b4b;
-      padding:16px;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      border-bottom:1px solid var(--border);
-    }
-    .stat-box {
-      background:rgba(129,140,248,0.15);
-      padding:14px;
-      border-radius:12px;
-      text-align:center;
-      border:1px solid rgba(129,140,248,0.3);
-    }
-    .stat-num { font-size:2rem; font-weight:800; color:#8b5cf6; }
-    .stat-label { font-size:0.9rem; color:#cbd5e1; margin-top:4px; }
-
-    .tabs {
-      display:flex;
-      background:#1e293b;
-      border-bottom:1px solid var(--border);
-    }
-    .tab {
-      flex:1;
-      padding:16px;
-      text-align:center;
-      cursor:pointer;
-      font-weight:600;
-      transition:0.3s;
-      position:relative;
-    }
-    .tab.active {
-      background:var(--primary);
-      color:white;
-    }
-    .tab.active::after {
-      content:'';
-      position:absolute;
-      bottom:0; left:0; right:0;
-      height:4px;
-      background:#fff;
-    }
-    .tab span { font-size:0.8rem; opacity:0.9; }
-
-    .list {
-      flex:1;
-      overflow-y:auto;
-      padding:12px;
-      background:var(--bg);
-    }
-    .case-card {
-      background:var(--card);
-      border-radius:16px;
-      padding:16px;
-      margin-bottom:12px;
-      border-left:6px solid #64748b;
-      box-shadow:0 4px 15px rgba(0,0,0,0.3);
-      transition:all 0.3s;
-      cursor:pointer;
-    }
-    .case-card:hover { transform:translateY(-4px); box-shadow:0 10px 25px rgba(0,0,0,0.5); }
-    .case-card.p5 { border-left-color:#ff1744; background:#330011; }
-    .case-card.p4 { border-left-color:#ff9100; }
-    .case-card.p3 { border-left-color:#4caf50; }
-
-    .card-top {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:10px;
-    }
-    .priority {
-      font-size:2.5rem;
-      font-weight:900;
-      width:64px;
-      height:64px;
-      border-radius:50%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:white;
-      background:var(--primary);
-      box-shadow:0 0 20px rgba(211,47,47,0.6);
-    }
-    .p5 .priority { background:#ff1744; box-shadow:0 0 30px #ff1744; animation:pulse 1.5s infinite; }
-    .p4 .priority { background:#ff9100; }
-    .p3 .priority { background:#4caf50; }
-
-    @keyframes pulse {
-      0% { box-shadow:0 0 20px #ff1744; }
-      70% { box-shadow:0 0 40px #ff1744; }
-      100% { box-shadow:0 0 20px #ff1744; }
-    }
-
-    .info h3 { font-size:1.25rem; margin-bottom:4px; }
-    .time { font-size:0.9rem; color:#94a3b8; }
-    .location { margin:10px 0; font-size:1rem; color:#e2e8f0; }
-
-    .tags {
-      display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;
-    }
-    .tag {
-      background:rgba(255,255,255,0.1);
-      padding:4px 10px;
-      border-radius:20px;
-      font-size:0.8rem;
-      backdrop-filter:blur(4px);
-    }
-
-    .actions {
-      display:grid;
-      grid-template-columns:1fr 1fr 1fr;
-      gap:8px;
-      margin-top:12px;
-    }
-    .btn {
-      padding:10px;
-      border:none;
-      border-radius:12px;
-      font-weight:600;
-      cursor:pointer;
-      transition:0.2s;
-      font-size:0.9rem;
-    }
-    .btn-call { background:#1b5e20; color:white; }
-    .btn-nav { background:#1565c0; color:white; }
-    .btn-done { background:#6d28d9; color:white; }
-
-    #map { flex:1; }
-
-    .bottom-bar {
-      position:fixed;
-      bottom:0; left:0; right:0;
-      background:rgba(15,23,42,0.95);
-      padding:12px;
-      text-align:center;
-      font-weight:600;
-      backdrop-filter:blur(10px);
-      border-top:1px solid var(--border);
-      z-index:1000;
-      color:#e2e8f0;
-    }
-
-    .toggle-btn {
-      position:fixed;
-      left:10px; top:90px;
-      z-index:1001;
-      background:var(--primary);
-      color:white;
-      border:none;
-      width:50px; height:50px;
-      border-radius:50%;
-      font-size:1.5rem;
-      cursor:pointer;
-      box-shadow:0 4px 15px rgba(0,0,0,0.5);
-    }
+    /* แจ้งเตือนด่วน */
+    #alertBox{position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#b71c1c;color:white;padding:24px 50px;border-radius:20px;font-size:2.2rem;font-weight:900;text-align:center;z-index:9999;box-shadow:0 15px 60px rgba(183,28,28,0.9);display:none;animation:pop 0.6s, shake 0.6s 0.6s infinite}
+    @keyframes pop{from{opacity:0;transform:translateX(-50%) scale(0.3)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+    @keyframes shake{0%,100%{transform:translateX(-50%) rotate(0)}25%{transform:translateX(-53%) rotate(-4deg)}75%{transform:translateX(-47%) rotate(4deg)}}
+    #stopBtn{position:fixed;top:250px;left:50%;transform:translateX(-50%);background:#1e293b;padding:14px 40px;border-radius:16px;border:3px solid #ff1744;color:white;font-size:1.3rem;font-weight:700;cursor:pointer;z-index:9999;display:none}
   </style>
 </head>
 <body>
+  <div class="header">ศูนย์กู้ภัยแห่งชาติ</div>
 
-  <div class="header">
-    ศูนย์กู้ภัยแห่งชาติ
-  </div>
-
-  <button class="toggle-btn" onclick="document.querySelector('.sidebar').classList.toggle('collapsed')">
-    <i class="fas fa-bars"></i>
-  </button>
+  <div id="alertBox">เคสด่วนระดับ 5 เข้ามา!<br><span id="alertName"></span></div>
+  <button id="stopBtn" onclick="stopAlert()">หยุดแจ้งเตือนทั้งหมด</button>
 
   <div class="container">
     <div class="sidebar">
       <div class="stats">
-        <div class="stat-box"><div class="stat-num" id="total">0</div><div class="stat-label">ทั้งหมด</div></div>
-        <div class="stat-box"><div class="stat-num" id="activeCount">0</div><div class="stat-label">กำลังดำเนินการ</div></div>
-        <div class="stat-box"><div class="stat-num" id="urgentCount">0</div><div class="stat-label">ด่วนมาก</div></div>
-        <div class="stat-box"><div class="stat-num" id="c3">0</div><div class="stat-label">เสร็จสิ้น</div></div>
+        <div class="stat"><div class="num" id="total">0</div><div>ทั้งหมด</div></div>
+        <div class="stat"><div class="num" id="activeCount">0</div><div>กำลังช่วย</div></div>
+        <div class="stat"><div class="num" id="urgentCount">0</div><div>ด่วน 4-5</div></div>
+        <div class="stat"><div class="num" id="doneCount">0</div><div>เสร็จแล้ว</div></div>
       </div>
-
       <div class="tabs">
         <div class="tab active" onclick="setTab('active')">กำลังช่วย <span id="c1">0</span></div>
         <div class="tab" onclick="setTab('urgent')">ด่วน 4-5 <span id="c2">0</span></div>
-        <div class="tab" onclick="setTab('done')">เสร็จแล้ว <span id="c3">0</span></div>
+        <div class="tab" onclick="setTab('done')">เสร็จแล้ว</div>
       </div>
-
-      <div class="list" id="list">
-        <div style="text-align:center;padding:50px;color:#64748b;font-size:1.1rem;">
-          กำลังเชื่อมต่อกับศูนย์กู้ภัย...
-        </div>
-      </div>
+      <div class="list" id="list">กำลังเชื่อมต่อฐานข้อมูล...</div>
     </div>
     <div id="map"></div>
   </div>
 
-  <div class="bottom-bar">
-    <span id="clock"></span> • ระบบออนไลน์ • อัปเดตเรียลไทม์
-  </div>
+  <div class="bottom" id="clock">ระบบพร้อม • รอเคสใหม่...</div>
 
-  <audio id="alert5" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-critical.mp3" preload="auto"></audio>
-  <audio id="alert4" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-high.mp3" preload="auto"></audio>
+  <audio id="sound5" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-critical.mp3" preload="auto" loop></audio>
+  <audio id="sound4" shell src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-high.mp3" preload="auto" loop></audio>
 
-  <!-- Firebase + Leaflet -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.2/dist/leaflet.markercluster.js"></script>
 
   <script>
-    const firebaseConfig = { databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app" };
-    firebase.initializeApp(firebaseConfig);
+    // Firebase
+    firebase.initializeApp({databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"});
     const db = firebase.database().ref("sos_requests");
 
-    const map = L.map('map').setView([13.7563, 100.5018], 6);
+    const map = L.map('map').setView([13.9467, 100.5612], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const cluster = L.markerClusterGroup({ maxClusterRadius: 60 });
+    const cluster = L.markerClusterGroup({maxClusterRadius: 40});
     map.addLayer(cluster);
 
     const markers = {};
     let currentTab = 'active';
+    let currentAudio = null;
 
     setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleString('th-TH'), 1000);
 
-    const addrCache = {};
-    async function getAddr(lat,lng) {
-      const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-      if(addrCache[key]) return addrCache[key];
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=th`, {
-          headers: { "User-Agent": "ThaiRescueCenter/2.0" }
-        });
-        const d = await r.json();
-        const a = [d.address?.village||d.address?.suburb, d.address?.city||d.address?.town, d.address?.state].filter(Boolean).join(', ');
-        return addrCache[key] = a || 'พิกัด GPS';
-      } catch { return addrCache[key] = 'พิกัด GPS'; }
+    function triggerAlert(prio, name = "ผู้ประสบภัย") {
+      stopAlert();
+      const audio = document.getElementById(prio === 5 ? 'sound5' : 'sound4');
+      audio.play().catch(() => {});
+      currentAudio = audio;
+
+      document.getElementById('alertName').textContent = name;
+      document.getElementById('alertBox').style.display = 'block';
+      document.getElementById('stopBtn').style.display = 'block';
+
+      if (navigator.vibrate) navigator.vibrate([1000,500,1000,500,1000]);
+
+      setTimeout(() => {
+        if (currentAudio === audio) stopAlert();
+      }, 30000);
     }
 
-    function setTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      event.target.classList.add('active');
-      render();
+    function stopAlert() {
+      if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+      document.getElementById('alertBox').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'none';
     }
 
-    function createMarker(lat,lng,prio,data,id) {
+    db.on('child_added', snap => {
+      const id = snap.key;
+      const d = snap.val();
+      if (!d || !d.location || !d.location.lat || !d.location.lng) return;
+
+      const prio = d.priority || 3;
+
       const icon = L.divIcon({
-        html: `<div style="width:50px;height:50px;background:${prio>=5?'#ff1744':prio>=4?'#ff9100':'#43a047'};border:4px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:20px;box-shadow:0 0 20px rgba(0,0,0,0.7)">${prio}</div>`,
-        iconSize: [50,50], iconAnchor: [25,25]
+        html: `<div style="width:55px;height:55px;background:${prio>=5?'#ff1744':prio>=4?'#ff9100':'#43a047'};color:white;border:5px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;box-shadow:0 0 20px #000">${prio}</div>`,
+        iconSize: [55,55], iconAnchor: [27,27]
       });
-      const m = L.marker([lat,lng], {icon});
-      getAddr(lat,lng).then(addr => {
-        m.bindPopup(`<b style="font-size:1.3rem;color:#d32f2f">ด่วน ${prio}</b><br><b>${data.name||'ไม่ระบุชื่อ'}</b><br>${addr}<br>${new Date(data.timestamp).toLocaleString('th-TH')}`, {maxWidth: 300});
-      });
-      return m;
-    }
+      const m = L.marker([d.location.lat, d.location.lng], {icon});
+      m.bindPopup(`<b style="font-size:1.4rem;color:${prio>=5?'#ff1744':'#ff9100'}">ด่วนระดับ ${prio}</b><br>${d.name||'ไม่ระบุ'}<br>${new Date(d.timestamp).toLocaleString('th-TH')}`);
+      markers[id] = {marker: m, data: d};
+      if (d.status !== 'completed') cluster.addLayer(m);
 
-    function createCard(id, data) {
-      getAddr(data.location.lat, data.location.lng).then(addr => {
-        const card = document.createElement('div');
-        card.className = `case-card p${data.priority}`;
-        card.innerHTML = `
-          <div class="card-top">
-            <div class="priority">${data.priority}</div>
-            <div>
-              <h3>${data.name || 'ไม่ระบุชื่อ'}</h3>
-              <div class="time">${new Date(data.timestamp).toLocaleTimeString('th-TH')}</div>
-            </div>
-          </div>
-          <div class="location"><i class="fas fa-map-marker-alt"></i> ${addr}</div>
-          <div class="tags">${(data.types||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-          <div class="actions">
-            ${data.phone ? `<button class="btn btn-call" onclick="event.stopPropagation();location.href='tel:${data.phone}'"><i class="fas fa-phone"></i> โทร</button>` : ''}
-            <button class="btn btn-nav" onclick="event.stopPropagation();window.open('https://maps.google.com/maps/dir/?api=1&destination=${data.location.lat},${data.location.lng}')"><i class="fas fa-directions"></i> นำทาง</button>
-            <button class="btn btn-done" onclick="event.stopPropagation();if(confirm('ยืนยันเสร็จสิ้นเคสนี้?')) firebase.database().ref('sos_requests/${id}').update({status:'completed'})"><i class="fas fa-check"></i> เสร็จ</button>
-          </div>
-        `;
-        card.onclick = () => map.setView([data.location.lat, data.location.lng], 18);
-        document.getElementById('list').appendChild(card);
-      });
-    }
+      // ดังทันทีเมื่อมีเคสใหม่ระดับ 4-5
+      if (prio >= 4 && d.status !== 'completed') {
+        triggerAlert(prio, d.name);
+      }
 
-    async function render() {
+      render();
+      updateCounters();
+    });
+
+    db.on('child_changed', snap => {
+      const id = snap.key;
+      const d = snap.val();
+      if (markers[id]) {
+        markers[id].data = d;
+        if (d.status === 'completed') {
+          cluster.removeLayer(markers[id].marker);
+        } else {
+          cluster.addLayer(markers[id].marker);
+        }
+      }
+      render();
+      updateCounters();
+    });
+
+    function render() {
       const list = document.getElementById('list');
-      list.innerHTML = '<div style="text-align:center;padding:50px;color:#64748b;">กำลังโหลดเคส...</div>';
+      list.innerHTML = '';
 
       const filtered = Object.entries(markers)
-        .filter(([_,v]) => {
-          if(currentTab==='done') return v.data.status==='completed';
-          if(currentTab==='urgent') return v.data.priority>=4 && v.data.status!=='completed';
-          return v.data.status!=='completed';
+        .filter(([_, v]) => {
+          if (currentTab === 'done') return v.data.status === 'completed';
+          if (currentTab === 'urgent') return (v.data.priority||0) >= 4 && v.data.status !== 'completed';
+          return v.data.status !== 'completed';
         })
-        .sort(([_,a],[__,b]) => b.data.priority - a.data.priority || b.data.timestamp - a.data.timestamp);
+        .sort(([_,a],[__,b]) => (b.data.priority||0) - (a.data.priority||0) || b.data.timestamp - a.data.timestamp);
 
-      list.innerHTML = '';
-      for(const [id,item] of filtered) {
-        createCard(id, item.data);
+      filtered.forEach(([id, item]) => {
+        const d = item.data;
+        const prio = d.priority || 3;
+        const card = document.createElement('div');
+        card.className = `card p${prio}`;
+        card.onclick = () => map.setView([d.location.lat, d.location.lng], 18);
+        card.innerHTML = `
+          <div style="display:flex;align-items:center">
+            <div class="prio">${prio}</div>
+            <div>
+              <h3>${d.name || 'ไม่ระบุชื่อ'}</h3>
+              <div class="meta">${new Date(d.timestamp).toLocaleTimeString('th-TH')} • ${d.status || 'pending'}</div>
+            </div>
+          </div>
+          <div style="margin:12px 0;font-size:1rem">
+            ${d.phone ? `โทร: ${d.phone} • ` : ''}${Array.isArray(d.types) ? d.types.join(', ') : 'ไม่ระบุประเภท'}
+          </div>
+          <div class="actions">
+            ${d.phone ? `<button class="btn btn-call" onclick="event.stopPropagation();location.href='tel:${d.phone}'">โทรเลย</button>` : ''}
+            <button class="btn btn-nav" onclick="event.stopPropagation();window.open('https://maps.google.com/maps/dir/?api=1&destination=${d.location.lat},${d.location.lng}')">นำทาง</button>
+            <button class="btn btn-done" onclick="event.stopPropagation();if(confirm('ยืนยันเสร็จสิ้นเคสนี้?'))firebase.database().ref('sos_requests/${id}').update({status:'completed'})">เสร็จสิ้น</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:50px;color:#64748b;font-size:1.2rem">ไม่มีเคสในหมวดนี้</div>';
       }
     }
 
     function updateCounters() {
-      let all=0, active=0, urgent=0, done=0;
-      Object.values(markers).forEach(m=>{
+      let all = 0, active = 0, urgent = 0, done = 0;
+      Object.values(markers).forEach(m => {
         all++;
-        if(m.data.status==='completed') done++;
-        else { active++; if(m.data.priority>=4) urgent++; }
+        if (m.data.status === 'completed') done++;
+        else { active++; if ((m.data.priority||0) >= 4) urgent++; }
       });
-      document.querySelectorAll('#total, #total-all').forEach(el=>el.textContent=all);
-      document.getElementById('c1').textContent = active;
-      document.getElementById('c2').textContent = urgent;
-      document.getElementById('c3').textContent = done;
+      document.getElementById('total').textContent = all;
       document.getElementById('activeCount').textContent = active;
       document.getElementById('urgentCount').textContent = urgent;
+      document.getElementById('doneCount').textContent = done;
+      document.getElementById('c1').textContent = active;
+      document.getElementById('c2').textContent = urgent;
     }
 
-    db.on('child_added', s => {
-      const d = s.val();
-      if(d?.location?.lat && d?.location?.lng){
-        const m = createMarker(d.location.lat, d.location.lng, d.priority||3, d, s.key);
-        markers[s.key] = {marker:m, data:d};
-        if(d.status!=='completed') cluster.addLayer(m);
-        if(d.priority===5) document.getElementById('alert5').play().catch(()=>{});
-        else if(d.priority===4) document.getElementById('alert4').play().catch(()=>{});
-      }
-      render(); updateCounters();
-    });
+    function setTab(t) {
+      currentTab = t;
+      document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+      event.target.classList.add('active');
+      render();
+    }
 
-    db.on('child_changed', s => {
-      const d = s.val();
-      if(markers[s.key]){
-        markers[s.key].data = d;
-        if(d.status==='completed') cluster.removeLayer(markers[s.key].marker);
-        else cluster.addLayer(markers[s.key].marker);
-      }
-      render(); updateCounters();
-    });
-
-    render(); updateCounters();
+    // เริ่มต้น
+    render();
+    updateCounters();
   </script>
 </body>
 </html>
