@@ -1,160 +1,204 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ศูนย์กู้ภัยแห่งชาติ • แผนที่ Real-time</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: Arial, sans-serif; }
-    #map { width: 100%; height: 100%; }
-    .header { position: fixed; top: 0; left: 0; right: 0; background: #c62828; color: #fff; padding: 12px; font-size: 1.4rem; font-weight: bold; text-align: center; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    #alert { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #ff1744; color: #fff; padding: 16px 40px; border-radius: 12px; font-size: 1.8rem; font-weight: bold; z-index: 9999; display: none; animation: shake 0.5s infinite; box-shadow: 0 0 30px #ff1744; }
-    @keyframes shake { 0%, 100% { transform: translateX(-50%) rotate(0); } 25% { transform: translateX(-52%) rotate(-3deg); } 75% { transform: translateX(-48%) rotate(3deg); } }
-    #stopAlert { position: fixed; top: 160px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 10px 30px; border: 2px solid #ff1744; border-radius: 10px; font-weight: bold; z-index: 9999; cursor: pointer; display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ศูนย์บัญชาการ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
+        #map{height:100vh;width:100%}
+
+        /* แถบแจ้งเตือนวิ่ง */
+        .alert-bar{
+            position:absolute;top:0;left:0;right:0;height:50px;background:#c41e3a;color:#fff;font-size:1.5rem;font-weight:800;
+            display:flex;align-items:center;overflow:hidden;z-index:2000;white-space:nowrap;
+        }
+        .alert-text{
+            animation:scroll-left 20s linear infinite;padding-left:100%;
+        }
+        @keyframes scroll-left{
+            0%{transform:translateX(0)}
+            100%{transform:translateX(-100%)}
+        }
+
+        /* แจ้งเตือนกลางจอ */
+        .big-alert{
+            position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+            background:#c41e3a;color:#fff;padding:40px 80px;border-radius:20px;font-size:3rem;font-weight:800;
+            box-shadow:0 0 100px #c41e3a;z-index:9999;opacity:0;pointer-events:none;
+            animation:flash 1.5s infinite, fadein 0.5s forwards;
+        }
+        @keyframes flash{0%,100%{opacity:0.9;box-shadow:0 0 100px #c41e3a}50%{opacity:1;box-shadow:0 0 150px #c41e3a}}
+        @keyframes fadein{to{opacity:1}}
+
+        .header{position:absolute;top:50px;left:0;right:0;height:70px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;padding:0 30px}
+        .header h1{font-size:2rem;color:#c41e3a}
+
+        .sidebar{position:absolute;top:120px;left:0;bottom:0;width:420px;background:rgba(10,10,30,0.97);backdrop-filter:blur(15px);z-index:999;overflow-y:auto;padding:20px;border-right:3px solid #c41e3a}
+        .item{background:rgba(255,255,255,0.1);border-left:6px solid #e74c3c;border-radius:8px;padding:16px;margin-bottom:14px;cursor:pointer;position:relative}
+        .item.pending{border-left-color:#e74c3c}
+        .item.acknowledged{border-left-color:#f39c12}
+        .item.completed{border-left-color:#27ae60;opacity:0.7}
+        .pri{position:absolute;top:10px;right:10px;background:#c41e3a;padding:5px 12px;border-radius:30px;font-size:0.9rem}
+        .btns{margin-top:12px;display:flex;gap:10px}
+        button{background:#c41e3a;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;flex:1;font-weight:bold}
+        button.ack{background:#e67e22}
+        button.done{background:#27ae60}
+
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(231,76,60,0.9)}70%{box-shadow:0 0 0 25px rgba(231,76,60,0)}100%{box-shadow:0 0 0 0 rgba(231,76,60,0)}}
+        .new-marker{animation:pulse 1.5s infinite}
+    </style>
 </head>
 <body>
-  <div class="header">ศูนย์กู้ภัยแห่งชาติ • กด Marker เพื่อดูข้อมูล</div>
-  <div id="alert">เคสด่วนระดับ 5 เข้ามา!</div>
-  <button id="stopAlert" onclick="stopAlert()">หยุดเสียง</button>
-  <div id="map"></div>
 
-  <audio id="alarm" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-critical.mp3" preload="auto" loop></audio>
+<div class="alert-bar" id="alertBar" style="display:none">
+    <div class="alert-text" id="alertText">ตรวจพบคำขอช่วยเหลือใหม่! – กำลังจมน้ำ – ความเร่งด่วนสูงสุด</div>
+</div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.4.2/dist/leaflet.markercluster.js"></script>
+<div class="big-alert" id="bigAlert">SOS ใหม่!</div>
 
-  <script>
-    // Firebase Init
-    const firebaseConfig = { databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("sos_requests");
-    console.log('Firebase initialized');
+<div class="header">
+    <h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย – ปสุตา SOS</h1>
+</div>
 
-    // Map Setup
-    const map = L.map('map').setView([13.9468, 100.5613], 16);  // ซูมไปที่ข้อมูลจริงของคุณ
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+<div class="sidebar">
+    <h2 style="color:#c41e3a;text-align:center">รายการคำขอช่วยเหลือ</h2>
+    <div id="list">กำลังโหลด...</div>
+</div>
 
-    const markers = L.markerClusterGroup({
-      maxClusterRadius: 50,
-      iconCreateFunction: function(cluster) {
-        return L.divIcon({
-          html: `<div style="background:#c62828;color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;border:3px solid #fff;box-shadow:0 0 10px #000">${cluster.getChildCount()}</div>`,
-          iconSize: [40, 40],
-          className: 'cluster-icon'
-        });
-      }
-    });
-    map.addLayer(markers);
+<div id="map"></div>
 
-    // Colors for priority
-    function getColor(priority) {
-      if (priority >= 5) return '#ff1744';
-      if (priority >= 4) return '#ff9100';
-      return '#43a047';
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([13.94678, 100.56125], 18);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const markers = {};
+    const list = document.getElementById('list');
+    let lastCount = 0;
+
+    // ขอสิทธิ์แจ้งเตือน
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
     }
 
-    // Alert function
-    let isAlerting = false;
-    function triggerAlert(name, priority) {
-      if (isAlerting) return;
-      isAlerting = true;
-      document.getElementById('alert').innerHTML = `เคสด่วนระดับ ${priority}! <br>ชื่อ: ${name || 'ไม่ระบุ'}`;
-      document.getElementById('alert').style.display = 'block';
-      document.getElementById('stopAlert').style.display = 'block';
-      const audio = document.getElementById('alarm');
-      audio.play().catch(e => console.log('Audio error:', e));
-      if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
-      setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        document.getElementById('alert').style.display = 'none';
-        document.getElementById('stopAlert').style.display = 'none';
-        isAlerting = false;
-      }, 10000);  // หยุดอัตโนมัติหลัง 10 วินาที
-    }
+    function triggerAlert(r) {
+        // 1. เสียงไซเรน
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
 
-    function stopAlert() {
-      const audio = document.getElementById('alarm');
-      audio.pause();
-      audio.currentTime = 0;
-      document.getElementById('alert').style.display = 'none';
-      document.getElementById('stopAlert').style.display = 'none';
-      isAlerting = false;
-    }
-
-    // Firebase Listeners
-    db.on('child_added', (snapshot) => {
-      const id = snapshot.key;
-      const data = snapshot.val();
-      console.log('New case added:', id, data);  // Debug log
-
-      if (!data || !data.location || !data.lat || !data.lng) {
-        console.log('Invalid location for', id);
-        return;
-      }
-
-      const lat = data.location.lat || data.lat;
-      const lng = data.location.lng || data.lng;
-      const priority = data.priority || 3;
-      const status = data.status || 'pending';
-
-      if (status === 'completed') return;
-
-      // Create marker
-      const icon = L.divIcon({
-        html: `<div style="background:${getColor(priority)};color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;border:3px solid #fff;box-shadow:0 0 15px ${getColor(priority)}aa">${priority}</div>`,
-        iconSize: [44, 44],
-        iconAnchor: [22, 22],
-        className: 'custom-marker'
-      });
-
-      const marker = L.marker([lat, lng], { icon });
-      markers.addLayer(marker);
-
-      // Popup content
-      const types = Array.isArray(data.types) ? data.types.join(', ') : 'ไม่ระบุ';
-      const popupContent = `
-        <div style="font-family:Arial,sans-serif;min-width:250px;padding:10px">
-          <h3 style="color:${getColor(priority)};margin:0 0 10px 0">ด่วนระดับ ${priority}</h3>
-          <b style="font-size:1.1rem">${data.name || 'ไม่ระบุชื่อ'}</b><br><br>
-          ${data.phone ? `<a href="tel:${data.phone}" style="color:#fff;background:#1b5e20;padding:6px 12px;text-decoration:none;border-radius:4px">โทร ${data.phone}</a><br><br>` : ''}
-          <strong>ประเภท:</strong> ${types}<br>
-          <strong>เวลา:</strong> ${new Date(data.timestamp).toLocaleString('th-TH')}<br><br>
-          <a href="https://maps.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" 
-             style="background:#1565c0;color:#fff;padding:8px 12px;text-decoration:none;border-radius:6px;display:inline-block">
-            นำทางไปยังจุด
-          </a>
-        </div>
-      `;
-      marker.bindPopup(popupContent, { maxWidth: 300 });
-
-      // Trigger alert for high priority
-      if (priority >= 4) {
-        triggerAlert(data.name, priority);
-      }
-    });
-
-    db.on('child_changed', (snapshot) => {
-      const id = snapshot.key;
-      const data = snapshot.val();
-      console.log('Case changed:', id, data);
-
-      if (markers.getLayers().some(layer => layer._leaflet_id === id)) {
-        // Update marker status
-        if (data.status === 'completed') {
-          markers.removeLayer(markers.getLayers().find(layer => layer._leaflet_id === id));
+        // 2. แจ้งเตือนเบราว์เซอร์
+        if (Notification.permission === 'granted') {
+            new Notification('SOS ใหม่!', {
+                body: `${r.name||'ไม่ระบุ'} – ${r.types?.join(', ')} – ความเร่งด่วน ${r.priority}`,
+                icon: 'https://api.iconify.design/mdi/alert.svg?color=red&width=192'
+            });
         }
-      }
-    });
 
-    // Initial load
-    console.log('Map ready, waiting for data...');
-  </script>
+        // 3. ข้อความวิ่ง + กลางจอ
+        document.getElementById('alertText').textContent = `ตรวจพบคำขอช่วยเหลือใหม่! – ${r.name||'ไม่ระบุชื่อ'} – ${r.types?.join(', ')} – ความเร่งด่วน ${r.priority}`;
+        document.getElementById('alertBar').style.display = 'flex';
+        document.getElementById('bigAlert').style.display = 'block';
+        setTimeout(()=>{document.getElementById('bigAlert').style.display='none'}, 5000);
+        setTimeout(()=>{document.getElementById('alertBar').style.display='none'}, 20000);
+    }
+
+    // ข้อมูลจริงของท่าน
+    const hardData = {
+        "-Of25ELkzh50SaGg-EyE": {name:"ปสุตา ทับทิม",phone:"0954515025",priority:3,status:"pending",types:["อาหารและน้ำ","ติดอยู่ในพื้นที่"],location:{lat:13.9467733,lng:100.5612473},timestamp:1764209784229},
+        "-Of26yXe8cpkyEF3SExO": {priority:5,status:"pending",types:["อาหารและน้ำ","กำลังจมน้ำ"],location:{lat:13.9467881,lng:100.5612524},timestamp:1764210239651},
+        "-Of27vP3JXa-r3s-ah4V": {priority:5,status:"pending",types:["กำลังจมน้ำ"],location:{lat:13.9467886,lng:100.5612530},timestamp:1764210500000}
+    };
+
+    async function load() {
+        let data = hardData;
+        try {
+            const r = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json');
+            const live = await r.json();
+            if (live) data = live;
+        } catch(e) { console.log('ใช้ข้อมูลสำรอง'); }
+
+        const currentCount = Object.keys(data).length;
+        if (currentCount > lastCount && lastCount > 0) {
+            // หาเคสใหม่
+            Object.entries(data).forEach(([id, r]) => {
+                if (!hardData[id]) triggerAlert(r);
+            });
+        }
+        lastCount = currentCount;
+
+        list.innerHTML = '';
+        Object.values(markers).forEach(m=>map.removeLayer(m));
+
+        Object.entries(data).forEach(([id, r]) => {
+            if (!r.location) return;
+
+            // List
+            const div = document.createElement('div');
+            div.className = `item ${r.status}`;
+            div.innerHTML = `<div class="pri">P${r.priority}</div>
+                <strong>${r.name||'ไม่ระบุชื่อ'}</strong><br>
+                ${r.phone?`<small>โทร: <a href="tel:${r.phone}">${r.phone}</a></small><br>`:''}
+                <small>${r.types?.join(', ')}</small>
+                <div class="btns">
+                    ${r.status!=='completed'?`<button class="ack" onclick="up('${id}','acknowledged')">รับทราบ</button>`:''}
+                    ${r.status!=='completed'?`<button class="done" onclick="up('${id}','completed')">ช่วยเหลือแล้ว</button>`:'<i>เสร็จสิ้น</i>'}
+                </div>`;
+            div.onclick = () => markers[id].openPopup();
+            list.appendChild(div);
+
+            // Marker
+            const color = r.status==='completed'?'#27ae60':r.status==='acknowledged'?'#f39c12':'#e74c3c';
+            const isNew = Date.now() - r.timestamp < 60000; // ใหม่ใน 1 นาที
+            const icon = L.divIcon({
+                html: `<div style="background:${color};width:54px;height:54px;border-radius:50%;border:7px solid #fff;
+                            display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;
+                            box-shadow:0 0 30px ${color};${isNew?'animation:pulse 1.5s infinite':''}">
+                         <i class="fas ${r.types?.includes('จมน้ำ')||r.types?.includes('กำลังจมน้ำ')?'fa-water':r.types?.includes('อาหาร')?'fa-utensils':'fa-home'}"></i>
+                       </div>`,
+                className: "", iconSize:[68,68], iconAnchor:[34,34]
+            });
+
+            const popup = L.popup({maxWidth:320}).setContent(`
+                <b style="color:${color};font-size:1.3rem">SOS ความเร่งด่วน ${r.priority}</b><hr>
+                ชื่อ: ${r.name||'ไม่ระบุ'}<br>เบอร์: ${r.phone?'<a href="tel:'+r.phone+'">'+r.phone+'</a>':'-'}<br>
+                ประเภท: ${r.types?.join(', ')}<br><br>
+                <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
+                        style="background:#c41e3a;color:#fff;border:none;padding:12px;width:100%;border-radius:8px;font-weight:bold">
+                    นำทางด่วน
+                </button>
+            `);
+
+            const m = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map).bindPopup(popup);
+            markers[id] = m;
+
+            // ถ้าเป็นเคสใหม่ → ซูมไปเลย
+            if (isNew) {
+                map.setView([r.location.lat, r.location.lng], 19);
+                m.openPopup();
+                triggerAlert(r);
+            }
+        });
+
+        if (Object.keys(markers).length > 0) {
+            const group = new L.featureGroup(Object.values(markers));
+            map.fitBounds(group.getBounds().pad(0.4));
+        }
+    }
+
+    async function up(id,status){
+        if(!confirm('ยืนยัน?')) return;
+        await fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`,{
+            method:'PUT', body:JSON.stringify(status)
+        });
+        load();
+    }
+
+    load();
+    setInterval(load, 5000); // ตรวจทุก 5 วินาที
+    setTimeout(()=>map.invalidateSize(),500);
+</script>
 </body>
 </html>
