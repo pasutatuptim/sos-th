@@ -3,57 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์บัญชาการ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@600;800&display=swap" rel="stylesheet">
+    <title>ศูนย์บัญชาการ SOS ปสุตา – เวอร์ชันเต็ม</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
 
-        .header{position:absolute;top:0;left:0;right:0;height:70px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;padding:0 30px}
-        .header h1{font-size:1.9rem;color:#c41e3a}
+        .header{position:absolute;top:0;left:0;right:0;height:68px;background:#111;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;padding:0 30px}
+        .header h1{font-size:1.95rem;color:#c41e3a;font-weight:800}
 
-        .alert-bar{position:absolute;top:0;left:0;right:0;height:46px;background:#c41e3a;color:#fff;font-size:1.4rem;font-weight:800;
-            display:flex;align-items:center;overflow:hidden;z-index:2000;white-space:nowrap;display:none}
-        .alert-text{animation:scroll 20s linear infinite;padding-left:100%}
-        @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+        .sidebar{position:absolute;top:68px;left:0;bottom:0;width:460px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);
+            z-index:999;overflow-y:auto;padding:22px;border-right:4px solid #c41e3a;box-shadow:10px 0 30px rgba(0,0,0,0.8)}
+        .item{background:rgba(255,255,255,0.08);border-radius:12px;padding:18px;margin-bottom:16px;cursor:pointer;position:relative;
+            transition:0.3s;box-shadow:0 5px 18px rgba(0,0,0,0.5)}
+        .item:hover{transform:translateY(-5px);background:rgba(255,255,255,0.13)}
 
-        .big-alert{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-            background:#c41e3a;color:#fff;padding:35px 70px;border-radius:18px;font-size:2.8rem;font-weight:800;
-            box-shadow:0 0 100px #c41e3a;z-index:9999;display:none;text-align:center}
-        .big-alert button{background:#fff;color:#c41e3a;border:none;padding:10px 22px;border-radius:10px;font-size:1.2rem;margin-top:15px;cursor:pointer}
+        .status-dot{width:16px;height:16px;border-radius:50%;display:inline-block;margin-right:12px;border:2px solid #fff}
+        .pri-badge{position:absolute;top:12px;right:12px;background:#c41e3a;color:#fff;padding:6px 12px;border-radius:20px;font-size:0.9rem;font-weight:bold}
 
-        .sidebar{position:absolute;top:70px;left:0;bottom:0;width:430px;background:rgba(10,10,30,0.98);backdrop-filter:blur(15px);
-            z-index:999;overflow-y:auto;padding:20px;border-right:3px solid #c41e3a}
-        .item{background:rgba(255,255,255,0.1);border-left:6px solid #e74c3c;border-radius:10px;padding:16px;margin-bottom:14px;
-            cursor:pointer;position:relative;transition:0.2s}
-        .item:hover{transform:translateX(6px);background:rgba(255,255,255,0.15)}
-        .item.pending{border-left-color:#e74c3c}
-        .item.acknowledged{border-left-color:#f39c12}
-        .item.completed{border-left-color:#27ae60;opacity:0.7}
-        .pri{position:absolute;top:8px;right:8px;background:#c41e3a;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold}
-        .btns{margin-top:12px;display:flex;gap:10px}
-        button{background:#c41e3a;color:#fff;border:none;padding:9px;border-radius:8px;cursor:pointer;flex:1;font-weight:bold;font-size:0.95rem}
+        .icons{display:flex;gap:16px;margin:12px 0;font-size:1.6rem}
+        .icons i{color:#ff9500}
+
+        .btns{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        button{background:#c41e3a;color:#fff;border:none;padding:11px;border-radius:8px;cursor:pointer;font-weight:bold;font-size:0.95rem}
+        button.going{background:#2980b9}
         button.ack{background:#e67e22}
         button.done{background:#27ae60}
+        button.cancel{background:#95a5a6;color:#000}
+        button.deceased{background:#2c3e50}
 
-        /* Marker เล็กลง สวย กระพริบเฉพาะใหม่ */
-        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(231,76,60,0.9)}70%{box-shadow:0 0 0 14px rgba(231,76,60,0)}100%{box-shadow:0 0 0 0 rgba(231,76,60,0)}}
+        /* Marker กลมเล็ก 20px */
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.9)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+        .dot{width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.7)}
+        .dot.new{animation:pulse 1.8s infinite}
     </style>
 </head>
 <body>
 
-<div class="alert-bar" id="alertBar"><div class="alert-text" id="alertText"></div></div>
-<div class="big-alert" id="bigAlert">
-    <div id="bigAlertMsg">SOS ใหม่!</div>
-    <button onclick="hideAlerts()">ปิดแจ้งเตือน</button>
-</div>
-
-<div class="header"><h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</h1></div>
+<div class="header"><h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย – ปสุตา SOS</h1></div>
 
 <div class="sidebar">
-    <h2 style="color:#c41e3a;text-align:center;margin-bottom:15px">รายการคำขอช่วยเหลือ</h2>
+    <h2 style="color:#c41e3a;text-align:center;margin-bottom:20px">รายการคำขอช่วยเหลือ (เรียลไทม์)</h2>
     <div id="list">กำลังโหลด...</div>
 </div>
 
@@ -66,36 +58,31 @@
 
     const markers = {};
     const list = document.getElementById('list');
-    const notifiedIds = new Set();
+    const notified = new Set();
 
-    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-
-    function hideAlerts() {
-        document.getElementById('bigAlert').style.display = 'none';
-        document.getElementById('alertBar').style.display = 'none';
+    // กำหนดสีตามสถานะ + ความเร่งด่วน
+    function getColor(r) {
+        if (r.status === 'deceased') return '#000000';      // ดำ → เสียชีวิต
+        if (r.status === 'canceled') return '#7f8c8d';       // เทา → ยกเลิก
+        if (r.status === 'completed') return '#27ae60';     // เขียว → เสร็จสิ้น
+        if (r.status === 'going') return '#2980b9';         // น้ำเงิน → กำลังไป
+        if (r.status === 'acknowledged') return '#e67e22';  // ส้ม → รับทราบ
+        if (r.priority >= 5 || (r.types && (r.types.includes('กำลังจมน้ำ') || r.types.includes('จมน้ำ')))) 
+            return '#c41e3a'; // แดงเข้ม → เร่งด่วนสูงสุด
+        return '#e74c3c'; // แดง → รอดำเนินการปกติ
     }
 
-    function triggerAlert(r, id) {
-        if (notifiedIds.has(id)) return;
-        notifiedIds.add(id);
-
-        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
-        if (Notification.permission === 'granted') {
-            new Notification('SOS ใหม่!', { body: `${r.name||'ไม่ระบุ'} – ${r.types?.join(', ')} – P${r.priority}` });
-        }
-
-        document.getElementById('alertText').textContent = `SOS ใหม่! – ${r.name||'ไม่ระบุ'} – ${r.types?.join(', ')} – ความเร่งด่วน ${r.priority}`;
-        document.getElementById('bigAlertMsg').innerHTML = r.priority >= 5 ? 'อันตรายถึงชีวิต!' : 'SOS ใหม่!';
-        document.getElementById('alertBar').style.display = 'flex';
-        document.getElementById('bigAlert').style.display = 'block';
-        setTimeout(hideAlerts, 8000);
+    function getTypeIcons(types) {
+        if (!types) return '<i class="fas fa-exclamation-triangle"></i>';
+        let h = '';
+        if (types.includes('จมน้ำ') || types.includes('กำลังจมน้ำ')) h += '<i class="fas fa-water" title="จมน้ำ"></i>';
+        if (types.includes('อาหาร') || types.includes('น้ำ')) h += '<i class="fas fa-utensils" title="อาหาร/น้ำ"></i>';
+        if (types.includes('ติดอยู่')) h += '<i class="fas fa-home" title="ติดอยู่"></i>';
+        if (types.includes('ยา')) h += '<i class="fas fa-medkit" title="ยา"></i>';
+        return h || '<i class="fas fa-exclamation-triangle"></i>';
     }
 
-    const hardData = {
-        "-Of25ELkzh50SaGg-EyE": {name:"ปสุตา ทับทิม",phone:"0954515025",priority:3,status:"pending",types:["อาหารและน้ำ","ติดอยู่ในพื้นที่"],location:{lat:13.9467733,lng:100.5612473}},
-        "-Of26yXe8cpkyEF3SExO": {priority:5,status:"pending",types:["อาหารและน้ำ","กำลังจมน้ำ"],location:{lat:13.9467881,lng:100.5612524}},
-        "-Of27vP3JXa-r3s-ah4V": {priority:5,status:"pending",types:["กำลังจมน้ำ"],location:{lat:13.9467886,lng:100.5612530}}
-    };
+    const hardData = { /* ข้อมูลเดิมของท่าน */ };
 
     async function load() {
         let data = hardData;
@@ -111,69 +98,75 @@
         Object.entries(data).forEach(([id, r]) => {
             if (!r.location?.lat) return;
 
-            // ตรวจจับเคสใหม่
-            if (r.status === 'pending' && !notifiedIds.has(id)) {
-                triggerAlert(r, id);
+            if (r.status === 'pending' && !notified.has(id)) {
+                notified.add(id);
+                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
             }
 
-            // List
+            const color = getColor(r);
+            const isNew = !notified.has(id) && r.status === 'pending';
+
+            // List Card
             const div = document.createElement('div');
             div.className = `item ${r.status||'pending'}`;
-            div.innerHTML = `<div class="pri">P${r.priority}</div>
-                <strong>${r.name||'ไม่ระบุชื่อ'}</strong><br>
-                ${r.phone?`<small>โทร: <a href="tel:${r.phone}">${r.phone}</a></small><br>`:''}
-                <small>${r.types?.join(', ')}</small>
+            div.innerHTML = `
+                <div class="pri-badge">P${r.priority||'?'} ${r.priority>=5?'⚡':''}</div>
+                <strong><span class="status-dot" style="background:${color}"></span> ${r.name || 'ไม่ระบุชื่อ'}</strong><br>
+                ${r.phone ? `<small>โทร: ${r.phone}</small><br>` : ''}
+                <div class="icons">${getTypeIcons(r.types)}</div>
                 <div class="btns">
-                    ${r.status!=='completed'?`<button class="ack" onclick="up('${id}','acknowledged')">รับทราบ</button>`:''}
-                    ${r.status!=='completed'?`<button class="done" onclick="up('${id}','completed')">ช่วยเหลือแล้ว</button>`:'<i>เสร็จสิ้น</i>'}
-                </div>`;
+                    ${r.status!=='going' && r.status!=='completed' && r.status!=='canceled' && r.status!=='deceased' ? `<button class="going" onclick="event.stopPropagation(); up('${id}','going')">กำลังไป</button>` : ''}
+                    ${r.status!=='acknowledged' && r.status!=='completed' && r.status!=='canceled' && r.status!=='deceased' ? `<button class="ack" onclick="event.stopPropagation(); up('${id}','acknowledged')">รับทราบ</button>` : ''}
+                    ${r.status!=='completed' && r.status!=='canceled' && r.status!=='deceased' ? `<button class="done" onclick="event.stopPropagation(); up('${id}','completed')">ช่วยเหลือแล้ว</button>` : ''}
+                    ${r.status!=='canceled' && r.status!=='completed' && r.status!=='deceased' ? `<button class="cancel" onclick="event.stopPropagation(); up('${id}','canceled')">ยกเลิก</button>` : ''}
+                    ${r.status!=='deceased' ? `<button class="deceased" onclick="event.stopPropagation(); up('${id}','deceased')">เสียชีวิต</button>` : '<span style="color:#fff">เสียชีวิตแล้ว</span>'}
+                </div>
+            `;
             div.onclick = () => markers[id]?.openPopup();
             list.appendChild(div);
 
-            // Marker เล็กลงมาก (จาก 68px → 42px)
-            const color = r.status==='completed'?'#27ae60':r.status==='acknowledged'?'#f39c12':'#e74c3c';
-            const isNew = !notifiedIds.has(id);
+            // Marker กลมเล็ก 20px
             const icon = L.divIcon({
-                html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;border:4px solid #fff;
-                            display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;
-                            box-shadow:0 3px 15px rgba(0,0,0,0.8);${isNew?'animation:pulse 1.8s infinite':''}">
-                         <i class="fas ${r.types?.includes('จมน้ำ')||r.types?.includes('กำลังจมน้ำ')?'fa-water':
-                            r.types?.includes('อาหาร')?'fa-utensils':'fa-home'}"></i>
-                       </div>`,
-                className: "", 
-                iconSize: [40,40], 
-                iconAnchor: [20,20]
+                className: "",
+                html: `<div class="dot${isNew?' new':''}" style="background:${color};"></div>`,
+                iconSize: [20,20],
+                iconAnchor: [10,10]
             });
 
             const m = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map)
-                .bindPopup(`<b style="color:${color}">SOS ความเร่งด่วน ${r.priority}</b><hr style="border-color:${color}">
-                           ชื่อ: ${r.name||'ไม่ระบุ'}<br>
-                           เบอร์: ${r.phone?'<a href="tel:'+r.phone+'">'+r.phone+'</a>':'-'}<br>
-                           ประเภท: ${r.types?.join(', ')}<br><br>
-                           <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
-                                   style="background:#c41e3a;color:#fff;padding:11px;width:100%;border:none;border-radius:8px">
-                               นำทางด่วน
-                           </button>`);
+                .bindPopup(`
+                    <b style="color:${color};font-size:1.2rem">SOS ${r.priority>=5?'เร่งด่วนสูงสุด':''}</b><hr>
+                    <b>${r.name || 'ไม่ระบุ'}</b><br>
+                    ${r.phone ? `โทร: <a href="tel:${r.phone}">${r.phone}</a><br>` : ''}
+                    ประเภท: ${r.types?.join(', ') || '-'}<br>
+                    สถานะ: <span style="color:${color}"><b>
+                        ${r.status==='pending'?'รอดำเนินการ':r.status==='going'?'กำลังเข้าช่วยเหลือ':r.status==='acknowledged'?'รับทราบแล้ว':r.status==='completed'?'ช่วยเหลือเสร็จสิ้น':r.status==='canceled'?'ยกเลิกแล้ว':r.status==='deceased'?'เสียชีวิต':'ไม่ระบุ'}
+                    </b></span><br><br>
+                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
+                            style="background:#c41e3a;color:#fff;padding:12px;width:100%;border:none;border-radius:8px;font-weight:bold">
+                        นำทางด่วน
+                    </button>
+                `, {maxWidth: 320});
             markers[id] = m;
         });
 
         if (Object.keys(markers).length > 0) {
-            const group = new L.featureGroup(Object.values(markers));
-            map.fitBounds(group.getBounds().pad(0.5));
+            map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.6));
         }
     }
 
-    async function up(id,status){
-        if(!confirm('ยืนยันเปลี่ยนสถานะเป็น "'+status+'" ?')) return;
-        await fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`,{
-            method:'PUT', body:JSON.stringify(status)
+    async function up(id, status) {
+        if (!confirm(`ยืนยันเปลี่ยนสถานะเป็น "${status === 'going' ? 'กำลังเข้าช่วยเหลือ' : status === 'acknowledged' ? 'รับทราบแล้ว' : status === 'completed' ? 'ช่วยเหลือแล้ว' : status === 'canceled' ? 'ยกเลิก' : 'เสียชีวิต'}" ?`)) return;
+        await fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
+            method: 'PUT',
+            body: JSON.stringify(status)
         });
         load();
     }
 
     load();
     setInterval(load, 5000);
-    setTimeout(()=>map.invalidateSize(),500);
+    setTimeout(() => map.invalidateSize(), 500);
 </script>
 </body>
 </html>
