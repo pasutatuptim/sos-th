@@ -3,84 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ศูนย์กู้ภัยแห่งชาติ - Real Time</title>
+  <title>ศูนย์กู้ภัยแห่งชาติ • ครบทุกเคส 100%</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.2/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.2/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,system-ui,sans-serif}
-    body{background:#0d1117;color:#fff;height:100vh;display:flex;overflow:hidden}
-    .sidebar{width:540px;background:#0d1117;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(255,0,0,0.6)}
-    
-    .header{background:#c62828;padding:22px;text-align:center;font-size:2.4rem;font-weight:900;color:#fff;text-shadow:0 3px 10px #000}
-    
-    .tabs{display:flex;background:#111;border-bottom:3px solid #333}
-    .tab{flex:1;padding:18px 10px;text-align:center;cursor:pointer;font-size:1.3rem;font-weight:700;transition:0.3s}
-    .tab.active{background:#c62828;color:#fff}
-    .tab span{font-size:2rem;font-weight:900;display:block;margin-bottom:4px}
-    
-    .list{flex:1;overflow-y:auto;padding:12px 15px}
-    .card{
-      background:#1e1e2e;margin:12px 0;padding:18px;border-radius:18px;
-      border-left:10px solid #444;box-shadow:0 6px 20px rgba(0,0,0,0.7);
-      transition:all 0.3s;cursor:pointer;position:relative;
-    }
-    .card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(255,0,0,0.4)}
-    .card.p5{border-left-color:#ff1744;background:#330000}
-    .card.p4{border-left-color:#ff9800}
-    .card.p3{border-left-color:#4caf50}
-    
-    .prio-badge{position:absolute;top:12px;right:12px;padding:6px 14px;border-radius:12px;font-weight:900;font-size:1.1rem;background:#ff1744;color:#fff}
-    
-    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .card-name{font-size:1.5rem;font-weight:900;color:#ff9999}
-    .card-time{font-size:0.95rem;color:#aaa}
-    
-    .card-location{margin:10px 0;background:rgba(255,255,255,0.1);padding:10px;border-radius:12px;font-size:1.1rem}
-    .card-location i{color:#4caf50}
-    
-    .card-types{margin:12px 0;display:flex;flex-wrap:wrap;gap:8px}
-    .type-tag{background:rgba(255,255,255,0.2);padding:6px 14px;border-radius:12px;font-size:0.95rem;font-weight:600}
-    
-    .card-note{margin-top:10px;font-size:1rem;color:#ffcccc;background:rgba(255,0,0,0.2);padding:8px;border-radius:10px}
-    
-    .card-actions{margin-top:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .btn{padding:12px;border:none;border-radius:12px;font-weight:900;font-size:1rem;cursor:pointer;transition:0.3s}
-    .btn-call{background:#4caf50;color:#fff}
-    .btn-nav{background:#2196f3;color:#fff}
-    .btn-zoom{background:#ff9800;color:#fff}
-    .btn-done{background:#9c27b0;color:#fff}
-    .btn:hover{transform:scale(1.05)}
-    
-    #map{flex:1;height:100vh;background:#000}
+    :root{--red:#c62828;--p5:#ff1744;--p4:#ff9800;--p3:#4caf50;--bg:#0d1117;--card:#161b22}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body,html{height:100%;background:var(--bg);color:#fff;font-family:'Prompt',sans-serif;overflow:hidden}
+    .container{display:flex;height:100vh;position:relative}
 
-    /* หมุดสุดยอด ตรงกลางเป๊ะ */
-    .thai-marker{width:90px;height:90px;position:relative;margin-left:-45px!important;margin-top:-45px!important}
-    .pulse{position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;animation:pulse 2s infinite}
-    .pulse.p5{border:9px solid #ff1744;box-shadow:0 0 50px #ff1744}
-    .pulse.p4{border:8px solid #ff9800;box-shadow:0 0 40px #ff9800}
-    .pulse.p3{border:7px solid #4caf50;box-shadow:0 0 35px #4caf50}
-    @keyframes pulse{0%{transform:scale(0.3);opacity:1}100%{transform:scale(2.2);opacity:0}}
-    .icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:75px;height:75px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;box-shadow:0 0 40px #000;border:8px solid #fff}
-    .icon.p5{background:#ff1744;color:#fff;border-color:#ff1744}
-    .icon.p4{background:#ff9800;color:#000}
-    .icon.p3{background:#4caf50;color:#fff}
+    .sidebar{width:430px;background:var(--bg);border-right:6px solid var(--red);display:flex;flex-direction:column;z-index:1000;transition:0.4s}
+    .sidebar.hidden{transform:translateX(-100%)}
+
+    .header{background:var(--red);padding:14px 0;text-align:center;font-size:1.9rem;font-weight:900;color:#fff}
+    .stats-bar{background:#111;padding:8px 12px;font-size:0.95rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+    .stats-bar span{color:#0f0;font-weight:900}
+
+    .controls{padding:8px;background:#111;display:flex;gap:6px;flex-wrap:wrap}
+    .btn-sm{padding:8px 12px;background:#333;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer}
+    .btn-sm.active{background:var(--red);color:#fff}
+
+    .list{flex:1;overflow-y:auto;padding:6px 8px}
+    .card{background:var(--card);margin:6px 4px;padding:10px;border-radius:10px;
+      border-left:5px solid #555;box-shadow:0 3px 10px rgba(0,0,0,0.5);
+      transition:0.2s;cursor:pointer;font-size:0.93rem;position:relative}
+    .card:hover{background:#1e1e2e;transform:translateY(-2px)}
+    .card.p5{border-left-color:var(--p5);background:#330011}
+    .card.p4{border-left-color:var(--p4)}
+    .card.p3{border-left-color:var(--p3)}
+
+    .card-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.98rem}
+    .prio{font-size:1.35rem;font-weight:900}
+    .time{font-size:0.8rem;color:#aaa}
+    .location{font-size:0.9rem;margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .types{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+    .type{font-size:0.75rem;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:8px}
+    .actions{margin-top:6px;display:flex;gap:4px;font-size:0.8rem}
+    .btn-tiny{padding:6px 8px;border:none;border-radius:6px;cursor:pointer;flex:1;font-weight:700}
+
+    .small-marker{width:40px;height:40px;margin-left:-20px!important;margin-top:-20px!important}
+    .small-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:18px;font-weight:900;color:#fff;border:4px solid #fff;box-shadow:0 0 15px #000}
+    .small-icon.p5{background:var(--p5)}
+    .small-icon.p4{background:var(--p4)}
+    .small-icon.p3{background:var(--p3)}
+
+    #map{flex:1}
+    .status-bar{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.9);padding:8px;text-align:center;font-weight:700;z-index:1000}
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <div class="header">ศูนย์กู้ภัยแห่งชาติ</div>
+      
+      <div class="stats-bar">
+        <div>ในระบบ: <span id="total-all">0</span> เคส</div>
+        <div>แสดงอยู่: <span id="total-show">0</span> เคส</div>
+        <button class="btn-sm" style="background:#ff9800" onclick="forceReload()">รีเฟรชทั้งหมด</button>
+      </div>
 
-  <div class="sidebar">
-    <div class="header">ศูนย์กู้ภัยแห่งชาติ</div>
-    
-    <div class="tabs">
-      <div class="tab active" data-tab="active"><span id="c1">0</span>กำลังช่วยเหลือ</div>
-      <div class="tab" data-tab="urgent"><span id="c2">0</span>ด่วนที่สุด</div>
-      <div class="tab" data-tab="done"><span id="c3">0</span>เสร็จสิ้น</div>
+      <div class="controls">
+        <button class="btn-sm active" id="tab-active">กำลังช่วย <span id="c1">0</span></button>
+        <button class="btn-sm" id="tab-urgent">ด่วน 4-5 <span id="c2">0</span></button>
+        <button class="btn-sm" id="tab-done">เสร็จแล้ว <span id="c3">0</span></button>
+        <button class="btn-sm" id="toggle-sidebar">ซ่อน Sidebar</button>
+      </div>
+
+      <div class="list" id="list"></div>
     </div>
-    
-    <div class="list" id="list"></div>
+    <div id="map"></div>
   </div>
 
-  <div id="map"></div>
+  <div class="status-bar">
+    <span id="clock"></span> | ทั้งหมด <span id="total">0</span> • ดำเนินการ <span id="activeCount">0</span> • ด่วน <span id="urgentCount">0</span>
+  </div>
 
   <audio id="a5" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-critical.mp3" preload="auto"></audio>
   <audio id="a4" src="https://cdn.jsdelivr.net/gh/nzbin/three-dots@master/dist/audio/alert-high.mp3" preload="auto"></audio>
@@ -88,141 +87,149 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.2/dist/leaflet.markercluster.js"></script>
 
   <script>
-    firebase.initializeApp({ databaseURL: "https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app" });
+    firebase.initializeApp({databaseURL:"https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"});
     const db = firebase.database().ref("sos_requests");
+
     const map = L.map('map').setView([13.7563, 100.5018], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    const markers = {};
-    const list = document.getElementById('list');
+    const markers = {};           // เก็บทุกเคสตลอดไป (ไม่ลบออกจาก object)
+    const cluster = L.markerClusterGroup({maxClusterRadius: 50});
+    map.addLayer(cluster);
+
     let currentTab = 'active';
 
-    document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      currentTab = t.dataset.tab;
-      render();
-    });
+    // นาฬิกา
+    setInterval(()=>document.getElementById('clock').innerText = new Date().toLocaleString('th-TH'),1000);
 
-    function getAddr(lat,lng,cb){
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=th`)
-        .then(r=>r.json()).then(d=>{
-          const a = d.address || {};
-          const addr = [a.village||a.suburb, a.town||a.city||a.municipality, a.state].filter(Boolean).join(' ');
-          cb(addr || "ไม่พบที่อยู่");
-        }).catch(()=>cb("พิกัด GPS"));
+    // ปุ่มต่าง ๆ
+    document.getElementById('tab-active').onclick = () => { currentTab='active'; render(); highlight('tab-active'); }
+    document.getElementById('tab-urgent').onclick = () => { currentTab='urgent'; render(); highlight('tab-urgent'); }
+    document.getElementById('tab-done').onclick   = () => { currentTab='done';   render(); highlight('tab-done'); }
+    function highlight(id){ document.querySelectorAll('.btn-sm').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    document.getElementById('toggle-sidebar').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('hidden');
+    };
+
+    // บังคับรีโหลดทั้งหมด
+    window.forceReload = () => {
+      location.reload();
+    };
+
+    const addrCache = {};
+    async function getAddr(lat,lng){
+      const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+      if(addrCache[key]) return addrCache[key];
+      try{
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=th`);
+        const d = await r.json();
+        const addr = [d.address?.village||d.address?.suburb, d.address?.town||d.address?.city, d.address?.state].filter(Boolean).join(', ');
+        addrCache[key] = addr || 'พิกัด GPS';
+        return addrCache[key];
+      }catch(e){return 'พิกัด GPS'}
     }
 
-    function createCard(id, data, addr){
+    function createMarker(lat,lng,prio,id,data){
+      const cls = prio>=5?'p5':prio>=4?'p4':'p3';
+      const icon = L.divIcon({
+        html:`<div class="small-marker"><div class="small-icon ${cls}">${prio}</div></div>`,
+        iconSize:[40,40], iconAnchor:[20,20]
+      });
+      const m = L.marker([lat,lng],{icon});
+      m.bindPopup(`<b>ด่วน ${prio}</b> • ${data.name||'ไม่ระบุ'}<br>กำลังโหลดที่อยู่...`);
+      getAddr(lat,lng).then(addr=>m.bindPopup(`<b>ด่วน ${prio}</b> • ${data.name||'ไม่ระบุ'}<br>${addr}<br>${new Date(data.timestamp).toLocaleString('th-TH')}`));
+      return m;
+    }
+
+    function createCard(id,data,addr){
       const card = document.createElement('div');
       card.className = `card p${data.priority}`;
-      card.onclick = () => map.setView([data.location.lat, data.location.lng], 18);
-      
+      card.onclick = () => map.setView([data.location.lat,data.location.lng],18);
       card.innerHTML = `
-        <div class="prio-badge">ด่วน ${data.priority}</div>
         <div class="card-header">
-          <div class="card-name">${data.name || "ไม่ระบุชื่อ"}</div>
-          <div class="card-time">${new Date(data.timestamp).toLocaleTimeString('th-TH')}</div>
+          <div class="prio">${data.priority}</div>
+          <div>${data.name||'ไม่ระบุ'}</div>
+          <div class="time">${new Date(data.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${addr}</div>
-        <div class="card-types">
-          ${data.types.map(t=>`<span class="type-tag">${t}</span>`).join('')}
-        </div>
-        ${data.note ? `<div class="card-note">${data.note}</div>` : ''}
-        ${data.phone ? `<div style="margin:10px 0"><i class="fas fa-phone"></i> ${data.phone}</div>` : ''}
-        <div class="card-actions">
-          <button class="btn btn-call" onclick="event.stopPropagation(); location.href='tel:${data.phone}'">โทรเลย</button>
-          <button class="btn btn-nav" onclick="event.stopPropagation(); window.open('https://www.google.com/maps/dir/?api=1&destination=${data.location.lat},${data.location.lng}')">นำทาง</button>
-          <button class="btn btn-zoom" onclick="event.stopPropagation(); map.setView([${data.location.lat},${data.location.lng}],18)">ซูม</button>
-          <button class="btn btn-done" onclick="event.stopPropagation(); if(confirm('เสร็จสิ้นแล้ว?')) db.child('${id}').update({status:'completed'})">เสร็จสิ้น</button>
+        <div class="location">ที่ตั้ง ${addr}</div>
+        <div class="types">${data.types.map(t=>`<span class="type">${t}</span>`).join('')}</div>
+        <div class="actions">
+          ${data.phone?`<button class="btn-tiny" style="background:#1b5e20" onclick="event.stopPropagation();location.href='tel:${data.phone}'">โทร</button>`:''}
+          <button class="btn-tiny" style="background:#1565c0" onclick="event.stopPropagation();window.open('https://maps.google.com/maps/dir/?api=1&destination=${data.location.lat},${data.location.lng}')">นำทาง</button>
+          <button class="btn-tiny" style="background:#6a1b9a" onclick="event.stopPropagation();if(confirm('เสร็จสิ้น?'))db.child('${id}').update({status:'completed'})">เสร็จ</button>
         </div>
       `;
       return card;
     }
 
-    function createMarker(lat,lng,prio,data,id){
-      const num = prio>=5?'5':prio>=4?'4':'3';
-      const cls = prio>=5?'p5':prio>=4?'p4':'p3';
-      
-      const icon = L.divIcon({
-        html: `<div class="thai-marker">
-                 <div class="pulse ${cls}"></div>
-                 <div class="icon ${cls}">${num}</div>
-               </div>`,
-        className: 'th-marker',
-        iconSize: [90,90],
-        iconAnchor: [45,45]
-      });
-
-      const m = L.marker([lat,lng],{icon}).addTo(map);
-      
-      getAddr(lat,lng,addr=>{
-        m.bindPopup(`
-          <div style="font-family:system-ui;padding:10px;min-width:280px">
-            <b style="font-size:1.6rem;color:#ff1744">ด่วน ${prio} - ${data.name||'ไม่ระบุ'}</b><hr>
-            <div><i class="fas fa-map-marker-alt"></i> ${addr}</div>
-            <div style="margin:8px 0"><b>ประเภท:</b> ${data.types.join(', ')}</div>
-            ${data.note?`<div style="margin:8px 0;color:#ff9999"><b>หมายเหตุ:</b> ${data.note}</div>`:''}
-            ${data.phone?`<div><i class="fas fa-phone"></i> <a href="tel:${data.phone}">${data.phone}</a></div>`:''}
-            <div style="margin:8px 0;color:#aaa"><i class="fas fa-clock"></i> ${new Date(data.timestamp).toLocaleString('th-TH')}</div>
-            <hr>
-            <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}')" 
-                    style="background:#2196f3;color:#fff;padding:10px 16px;border:none;border-radius:10px;margin:3px;cursor:pointer;width:100%">นำทาง Google Maps</button>
-            <button onclick="if(confirm('เสร็จสิ้นเคสนี้?')) firebase.database().ref('sos_requests/${id}').update({status:'completed'})"
-                    style="background:#9c27b0;color:#fff;padding:10px 16px;border:none;border-radius:10px;margin:3px;cursor:pointer;width:100%">เสร็จสิ้น</button>
-          </div>
-        `,{maxWidth:400});
-      });
-      
-      return m;
-    }
-
-    function render(){
+    async function render(){
+      const list = document.getElementById('list');
       list.innerHTML = '';
-      const all = Object.entries(markers)
-        .filter(([_,v]) => currentTab==='done' ? v.data.status==='completed' : v.data.status!=='completed')
-        .filter(([_,v]) => currentTab==='urgent' ? v.data.priority>=4 : true)
+
+      const filtered = Object.entries(markers)
+        .filter(([_,v]) => {
+          if(currentTab==='done') return v.data.status==='completed';
+          if(currentTab==='urgent') return v.data.priority>=4 && v.data.status!=='completed';
+          return v.data.status!=='completed';
+        })
         .sort(([_,a],[__,b]) => b.data.priority - a.data.priority || b.data.timestamp - a.data.timestamp);
-      
-      all.forEach(([id,item])=>{
-        getAddr(item.data.location.lat, item.data.location.lng, addr=>{
-          list.appendChild(createCard(id, item.data, addr));
-        });
-      });
+
+      document.getElementById('total-show').textContent = filtered.length;
+
+      for(const [id,item] of filtered){
+        const addr = await getAddr(item.data.location.lat,item.data.location.lng);
+        list.appendChild(createCard(id,item.data,addr));
+      }
     }
 
-    function updateCount(){
-      let active=0, urgent=0, done=0;
+    function updateAllCounters(){
+      let all=0, active=0, urgent=0, done=0;
       Object.values(markers).forEach(m=>{
+        all++;
         if(m.data.status==='completed') done++;
         else{ active++; if(m.data.priority>=4) urgent++; }
       });
+      document.getElementById('total-all').textContent = all;
+      document.getElementById('total').textContent = all;
       document.getElementById('c1').textContent = active;
       document.getElementById('c2').textContent = urgent;
       document.getElementById('c3').textContent = done;
+      document.getElementById('activeCount').textContent = active;
+      document.getElementById('urgentCount').textContent = urgent;
     }
 
-    db.on('child_added', s=>{
+    // รับข้อมูลทุกครั้งที่ Firebase มีการเปลี่ยนแปลง
+    db.on('child_added', s => {
       const d = s.val();
-      if(d.location && d.status!=='completed'){
-        markers[s.key] = {marker:createMarker(d.location.lat,d.location.lng,d.priority,d,s.key), data:d};
+      if(d.location && d.location.lat && d.location.lng){
+        const m = createMarker(d.location.lat, d.location.lng, d.priority, s.key, d);
+        markers[s.key] = {marker:m, data:d};
+        if(d.status!=='completed') cluster.addLayer(m);
         if(d.priority===5) document.getElementById('a5').play();
         else if(d.priority===4) document.getElementById('a4').play();
       }
-      render(); updateCount();
+      render(); updateAllCounters();
     });
 
-    db.on('child_changed', s=>{
-      if(s.val().status==='completed' && markers[s.key]){
-        map.removeLayer(markers[s.key].marker);
-        delete markers[s.key];
+    db.on('child_changed', s => {
+      const d = s.val();
+      if(markers[s.key]){
+        markers[s.key].data = d;
+        if(d.status==='completed'){
+          cluster.removeLayer(markers[s.key].marker);
+        }else{
+          cluster.addLayer(markers[s.key].marker);
+        }
       }
-      render(); updateCount();
+      render(); updateAllCounters();
     });
 
-    render(); updateCount();
+    // เริ่มต้น
+    render(); updateAllCounters();
   </script>
 </body>
 </html>
