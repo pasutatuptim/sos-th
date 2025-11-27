@@ -4,207 +4,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
         .header{position:fixed;top:0;left:0;right:0;height:68px;background:#111;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center}
         .header h1{font-size:1.95rem;color:#c41e3a;font-weight:800}
-        .sidebar{position:fixed;top:68px;left:0;bottom:0;width:500px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);z-index:999;overflow-y:auto;padding:24px;border-right:4px solid #c41e3a}
-        .item{background:rgba(255,255,255,0.09);border-radius:16px;padding:24px;margin-bottom:20px;cursor:pointer;position:relative;transition:all .3s;box-shadow:0 8px 25px rgba(0,0,0,.7);border-left:8px solid transparent}
-        .item:hover{transform:translateY(-6px);background:rgba(255,255,255,0.16)}
-        .item.highlight{background:rgba(196,30,58,0.3)!important;border:3px solid #c41e3a!important;box-shadow:0 0 30px rgba(196,30,58,.8)!important}
-        .item.pending{border-left-color:#e74c3c}.item.going{border-left-color:#2980b9}.item.acknowledged{border-left-color:#e67e22}.item.completed{border-left-color:#27ae60}.item.canceled{border-left-color:#95a5a6}
-        .pri-badge{position:absolute;top:16px;right:16px;background:#c41e3a;color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold}
-        .status-dot{width:22px;height:22px;border-radius:50%;display:inline-block;margin-right:12px;border:4px solid #fff}
-        .deceased{background:#000;color:#fff;padding:10px 18px;border-radius:12px;font-weight:bold;margin:12px 0;display:inline-block}
-        .timestamp-line{margin:12px 0;padding:12px;background:rgba(255,215,0,0.2);border-radius:10px;border-left:4px solid gold;font-weight:bold}
-        .status-btn{background:#c41e3a;color:#fff;padding:16px;border:none;border-radius:12px;font-weight:bold;width:100%;margin-top:16px;cursor:pointer}
-        .status-btn:hover{background:#e74c3c}
-        .zoom-hint{margin-top:12px;padding-top:12px;border-top:1px dashed #555;color:#bbb;text-align:center;font-size:0.95rem}
-        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.9)}70%{box-shadow:0 0 0 28px transparent}100%{box-shadow:0 0 0 0 transparent}}
-        .dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.9)}
-        .dot.new{animation:pulse 1.8s infinite}
+        .sidebar{position:fixed;top:68px;left:0;bottom:0;width:520px;background:rgba(10,15,35,0.98);backdrop-filter:blur(20px);z-index:999;overflow-y:auto;padding:24px;border-right:6px solid #c41e3a}
+        .item{background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));border-radius:20px;padding:26px;margin-bottom:22px;cursor:pointer;position:relative;transition:all 0.4s;box-shadow:0 10px 30px rgba(0,0,0,0.6);border-left:8px solid transparent}
+        .item:hover{transform:translateY(-8px);box-shadow:0 20px 40px rgba(196,30,58,0.4)}
+        .item.highlight{background:linear-gradient(135deg,rgba(196,30,58,0.4),rgba(196,30,58,0.2))!important;border:3px solid #c41e3a!important;box-shadow:0 0 40px rgba(196,30,58,0.8)!important;transform:scale(1.03)!important}
+        .pri-badge{position:absolute;top:18px;right:18px;background:#c41e3a;color:#fff;padding:12px 22px;border-radius:40px;font-weight:900;font-size:1.1rem}
+        .status-dot{width:26px;height:26px;border-radius:50%;display:inline-block;margin-right:14px;border:5px solid #fff;box-shadow:0 4px 15px rgba(0,0,0,0.7)}
+        .name{font-size:1.7rem;font-weight:700;margin-bottom:8px}
+        .phone{font-size:1.3rem;color:#0ff;font-weight:bold;margin:10px 0}
+        .types{font-size:1.2rem;color:#ffdd00;line-height:1.7;margin:14px 0;padding:14px;background:rgba(255,255,255,0.05);border-radius:14px}
+        .timestamp{margin:14px 0;padding:12px;background:rgba(255,215,0,0.2);border-radius:12px;border-left:5px solid #ffdd00;font-weight:bold;text-align:center}
+        .status-btn{background:#c41e3a;color:#fff;padding:18px;border:none;border-radius:16px;font-weight:900;width:100%;margin-top:18px;cursor:pointer;font-size:1.2rem}
+        .status-btn:hover{background:#e74c3c;transform:scale(1.05)}
+        .loading{color:#c41e3a;text-align:center;padding:80px;font-size:1.6rem}
+        .error{color:#ff6b6b;background:#300;padding:20px;border-radius:16px;margin:20px;text-align:center}
+        .marker-pin{width:36px;height:36px;border-radius:50% 50% 50% 0;background:var(--color);transform:rotate(-45deg);border:5px solid #fff;box-shadow:0 4px 20px rgba(0,0,0,0.8)}
+        .marker-pin::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:10px;left:10px}
+        .marker-pin.new{animation:pulse 2s infinite}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.9)}70%{box-shadow:0 0 0 30px transparent}}
     </style>
 </head>
 <body>
+
 <div class="header"><h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</h1></div>
+
 <div class="sidebar">
-    <h2 style="color:#c41e3a;text-align:center;margin-bottom:24px;font-size:1.9rem">รายการคำขอความช่วยเหลือ</h2>
-    <div id="list">กำลังโหลด...</div>
+    <h2 style="color:#c41e3a;text-align:center;margin-bottom:28px;font-size:2.1rem">รายการคำขอความช่วยเหลือ</h2>
+    <div id="list"><div class="loading">กำลังเชื่อมต่อฐานข้อมูล...</div></div>
 </div>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const map = L.map('map').setView([13.94678, 100.56125], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const markers = {}; const cards = {}; const list = document.getElementById('list'); const notified = new Set();
-    let init = false;
 
-    // ฟังก์ชันเปลี่ยนสถานะ (สำคัญมาก!)
-    function showStatusMenu(id, currentStatus, cardElement) {
-        const menu = document.createElement('div');
-        menu.style.position = 'fixed';
-        menu.style.top = '50%';
-        menu.style.left = '50%';
-        menu.style.transform = 'translate(-50%, -50%)';
-        menu.style.background = '#111';
-        menu.style.border = '4px solid #c41e3a';
-        menu.style.borderRadius = '16px';
-        menu.style.padding = '30px';
-        menu.style.zIndex = '99999';
-        menu.style.boxShadow = '0 0 40px rgba(196,30,58,0.9)';
-        menu.style.minWidth = '360px';
-        menu.innerHTML = '<h2 style="color:#c41e3a;text-align:center;margin:0 0 20px">เปลี่ยนสถานะ</h2>';
+    const markers = {};
+    const cards = {};
+    const list = document.getElementById('list');
+    const notified = new Set();
+    let hasZoomed = false;
 
-        const options = [
-            {status: 'going', label: 'กำลังเข้าช่วยเหลือ', color: '#2980b9'},
-            {status: 'acknowledged', label: 'รับทราบแล้ว', color: '#e67e22'},
-            {status: 'completed', label: 'ช่วยเหลือเสร็จสิ้น', color: '#27ae60'},
-            {status: 'canceled', label: 'ยกเลิกคำขอ', color: '#95a5a6'}
-        ];
-
-        options.forEach(opt => {
-            if (opt.status === currentStatus) return;
-            const btn = document.createElement('div');
-            btn.textContent = opt.label;
-            btn.style.background = opt.color;
-            btn.style.color = '#fff';
-            btn.style.padding = '18px';
-            btn.style.margin = '10px 0';
-            btn.style.borderRadius = '12px';
-            btn.style.textAlign = 'center';
-            btn.style.fontWeight = 'bold';
-            btn.style.fontSize = '1.2rem';
-            btn.style.cursor = 'pointer';
-            btn.onclick = () => {
-                if (confirm(`ยืนยันเปลี่ยนเป็น "${opt.label}" ?`)) {
-                    updateStatus(id, opt.status);
-                    document.body.removeChild(menu);
-                }
-            };
-            menu.appendChild(btn);
-        });
-
-        const close = document.createElement('div');
-        close.textContent = 'ปิด';
-        close.style.background = '#444';
-        close.style.padding = '14px';
-        close.style.textAlign = 'center';
-        close.style.marginTop = '20px';
-        close.style.borderRadius = '12px';
-        close.style.cursor = 'pointer';
-        close.onclick = () => document.body.removeChild(menu);
-        menu.appendChild(close);
-
-        document.body.appendChild(menu);
-    }
-
-    async function updateStatus(id, newStatus) {
-        try {
-            await fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStatus)
-            });
-            load(); // รีโหลดทันที
-        } catch(e) {
-            alert('เปลี่ยนสถานะไม่สำเร็จ กรุณาลองใหม่');
-        }
-    }
-
-    function formatTime(ts) {
-        if (!ts) return 'ไม่ระบุเวลา';
-        const d = new Date(ts);
-        const diff = Date.now() - ts;
-        if (diff < 60000) return 'เมื่อสักครู่';
-        if (diff < 3600000) return Math.floor(diff/60000) + ' นาทีที่แล้ว';
-        if (diff < 86400000) return Math.floor(diff/3600000) + ' ชม.ที่แล้ว';
-        return d.toLocaleString('th-TH');
-    }
-
-    function getColor(r) {
-        if (r.types && r.types.some(t=>/เสียชีวิต|ตาย|ศพ/.test(t))) return '#000';
-        if (r.status==='completed') return '#27ae60';
-        if (r.status==='going') return '#2980b9';
-        if (r.status==='acknowledged') return '#e67e22';
-        if (r.priority>=5 || (r.types&&r.types.some(t=>/จมน้ำ/.test(t)))) return '#c41e3a';
-        return '#e74c3c';
-    }
-
+    // สำรอง: ถ้า Firebase ช้าเกิน 8 วินาที ให้ลองรีโหลดอัตโนมัติ
     async function load() {
+        list.innerHTML = `<div class="loading">กำลังโหลดข้อมูล... <span id="dot">...</span></div>`;
+        const dot = document.getElementById('dot');
+        let dots = 0;
+        const dotInterval = setInterval(() => { dots = (dots+1)%4; dot.textContent = '.'.repeat(dots); }, 500);
+
         let data = {};
         try {
-            const r = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json');
-            data = await r.json() || {};
-        } catch(e) {
-            list.innerHTML = '<div style="color:#f66;text-align:center;padding:50px">โหลดไม่ได้ กรุณารีเฟรช</div>';
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 9000); // ตั้งเวลา 9 วิ
+
+            const res = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json', {signal: controller.signal});
+            clearTimeout(timeout);
+
+            if (!res.ok) throw new Error('เชื่อมต่อไม่ได้');
+            data = await res.json();
+            if (data === null) data = {};
+
+        } catch (e) {
+            clearInterval(dotInterval);
+            list.innerHTML = `<div class="error">
+                เชื่อมต่อฐานข้อมูลไม่สำเร็จ<br><br>
+                <button onclick="location.reload()" style="background:#c41e3a;padding:16px 32px;border:none;border-radius:12px;color:#fff;font-weight:bold;cursor:pointer">รีเฟรชใหม่</button>
+            </div>`;
             return;
         }
-        if (Object.keys(data).length===0) { list.innerHTML = '<div style="color:#aaa;text-align:center;padding:50px">ยังไม่มีคำขอช่วยเหลือ</div>'; return; }
+
+        clearInterval(dotInterval);
+
+        if (Object.keys(data).length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:100px;color:#666;font-size:1.5rem">ยังไม่มีคำขอช่วยเหลือ</div>';
+            return;
+        }
 
         list.innerHTML = '';
         const newIds = new Set();
 
         Object.entries(data).forEach(([id, r]) => {
-            if (!r.location?.lat) return;
-            if (r.status==='pending' && !notified.has(id)) { notified.add(id); newIds.add(id); new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{}); }
+            if (!r.location?.lat || !r.location?.lng) return;
 
-            const color = getColor(r);
+            // แจ้งเตือนจุดใหม่
+            if ((r.status || 'pending') === 'pending' && !notified.has(id)) {
+                notified.add(id);
+                newIds.add(id);
+                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
+            }
+
+            const color = (() => {
+                if (r.types && r.types.some(t => /เสียชีวิต|ตาย|ศพ/.test(t))) return '#000000';
+                if (r.status === 'completed') return '#27ae60';
+                if (r.status === 'going') return '#2980b9';
+                if (r.status === 'acknowledged') return '#e67e22';
+                if (r.priority >= 5 || (r.types && r.types.some(t => /จมน้ำ/.test(t)))) return '#c41e3a';
+                return '#e74c3c';
+            })();
+
             const isNew = newIds.has(id);
 
             const div = document.createElement('div');
-            div.className = `item ${r.status||'pending'}`;
+            div.className = `item ${r.status || 'pending'}`;
             div.innerHTML = `
-                <div class="pri-badge">P${r.priority||'?'}</div>
-                <strong><span class="status-dot" style="background:${color}"></span> ${r.name||'ไม่ระบุชื่อ'}</strong>
-                ${r.phone ? `<div style="margin:8px 0">โทร: <span style="color:#0ff;font-weight:bold">${r.phone}</span></div>` : ''}
-                <div style="margin:8px 0;line-height:1.5"><strong>ต้องการ:</strong> ${r.types ? r.types.join(' • ') : 'ทั่วไป'}</div>
-                <div class="timestamp-line">แจ้งเมื่อ: ${formatTime(r.timestamp)}</div>
-                <div class="zoom-hint">แตะเพื่อดูตำแหน่ง</div>
+                <div class="pri-badge">P${r.priority || '?'}</div>
+                <div class="name"><span class="status-dot" style="background:${color}"></span>${r.name || 'ไม่ระบุชื่อ'}</div>
+                ${r.phone ? `<div class="phone">โทร: ${r.phone}</div>` : ''}
+                <div class="types">${r.types ? r.types.join(' • ') : 'ขอความช่วยเหลือทั่วไป'}</div>
+                <div class="timestamp">แจ้งเมื่อ: ${new Date(r.timestamp).toLocaleString('th-TH')}</div>
                 <button class="status-btn">เปลี่ยนสถานะ</button>
             `;
 
-            // คลิกการ์ด → ซูมไปจุดนั้น
             div.onclick = (e) => {
                 if (e.target.classList.contains('status-btn')) return;
                 map.setView([r.location.lat, r.location.lng], 18);
                 markers[id].openPopup();
+                highlightCard(id);
             };
 
-            // ปุ่มเปลี่ยนสถานะ (สำคัญ!)
             div.querySelector('.status-btn').onclick = (e) => {
                 e.stopPropagation();
-                showStatusMenu(id, r.status || 'pending', div);
+                showStatusMenu(id, r.status || 'pending');
             };
+
+            div.onmouseenter = () => highlightCard(id);
+            div.onmouseleave = () => clearHighlight();
 
             list.appendChild(div);
             cards[id] = div;
 
-            // Marker
-            const icon = L.divIcon({html:`<div class="dot${isNew?' new':''}" style="background:${color}"></div>`,iconSize:[20,20],iconAnchor:[10,10]});
-            if (!markers[id]) markers[id] = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map);
-            else markers[id].setLatLng([r.location.lat, r.location.lng]).setIcon(icon);
+            // Marker สวย
+            const icon = L.divIcon({
+                className: '',
+                html: `<div class="marker-pin${isNew?' new':''}" style="--color:${color}"></div>`,
+                iconSize: [36,36],
+                iconAnchor: [18,36],
+                popupAnchor: [0,-36]
+            });
 
-            markers[id].bindPopup(`<div style="font-family:Sarabun;padding:16px;min-width:300px">
-                <b style="font-size:1.8rem">${r.name||'ไม่ระบุชื่อ'}</b><br>
-                ${r.phone ? `โทร: <a href="tel:${r.phone}" style="color:#0f0;font-size:1.5rem;font-weight:bold">${r.phone}</a><br>` : ''}
-                <div style="margin:12px 0;padding:12px;background:#222;border-radius:10px;color:#ffdd00">${r.types ? r.types.join(' • ') : 'ทั่วไป'}</div>
-                <div style="margin:12px 0;padding:12px;background:rgba(255,215,0,0.2);border-radius:10px">แจ้งเมื่อ: ${formatTime(r.timestamp)}</div>
-                <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')" style="margin-top:12px;background:#c41e3a;color:#fff;padding:16px;width:100%;border:none;border-radius:12px;font-weight:bold">นำทางด่วน</button>
-            </div>`);
+            if (markers[id]) {
+                markers[id].setLatLng([r.location.lat, r.location.lng]).setIcon(icon);
+            } else {
+                markers[id] = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map);
+            }
 
-            if (isNew) { map.setView([r.location.lat, r.location.lng], 18); setTimeout(()=>markers[id].openPopup(),800); }
+            markers[id].bindPopup(`
+                <div style="font-family:Sarabun;padding:20px;min-width:340px">
+                    <div style="background:${color};color:#fff;padding:16px;border-radius:16px;text-align:center;font-weight:900;margin-bottom:16px;font-size:1.4rem">
+                        P${r.priority||'?'} • ${r.priority>=5?'เร่งด่วนมาก':''}
+                    </div>
+                    <b style="font-size:2rem">${r.name||'ไม่ระบุชื่อ'}</b><br>
+                    ${r.phone ? `โทร: <a href="tel:${r.phone}" style="color:#0f0;font-size:1.8rem;font-weight:bold">${r.phone}</a><br>` : ''}
+                    <div style="margin:16px 0;padding:16px;background:rgba(255,255,255,0.1);border-radius:14px;color:#ffdd00">
+                        ${r.types ? r.types.join(' • ') : 'ขอความช่วยเหลือทั่วไป'}
+                    </div>
+                    <div style="margin:14px 0;padding:14px;background:rgba(255,215,0,0.2);border-radius:12px;border-left:5px solid gold;font-weight:bold">
+                        แจ้งเมื่อ: ${new Date(r.timestamp).toLocaleString('th-TH')}
+                    </div>
+                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
+                        style="margin-top:16px;background:#c41e3a;color:#fff;padding:20px;width:100%;border:none;border-radius:16px;font-weight:900;font-size:1.5rem">
+                        นำทางไปยังจุดนี้ทันที
+                    </button>
+                </div>
+            `);
+
+            markers[id].on('mouseover', () => highlightCard(id));
+            markers[id].on('mouseout', clearHighlight);
         });
 
-        if (!init && Object.keys(markers).length>0) { init=true; setTimeout(()=>map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.5)),1000); }
+        if (!hasZoomed && Object.keys(markers).length > 0) {
+            hasZoomed = true;
+            setTimeout(() => map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.6)), 800);
+        }
     }
 
+    function highlightCard(id) {
+        Object.values(cards).forEach(c => c.classList.remove('highlight'));
+        cards[id]?.classList.add('highlight');
+        cards[id]?.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    function clearHighlight() {
+        Object.values(cards).forEach(c => c.classList.remove('highlight'));
+    }
+
+    function showStatusMenu(id, current) {
+        // (เหมือนเดิม)
+        const menu = document.createElement('div');
+        menu.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;border:5px solid #c41e3a;border-radius:20px;padding:35px;z-index:99999;min-width:400px;box-shadow:0 0 50px rgba(196,30,58,0.9)';
+        menu.innerHTML = `<h2 style="color:#c41e3a;text-align:center;margin-bottom:25px">เปลี่ยนสถานะ</h2>`;
+        const opts = [
+            {s:'going', l:'กำลังเข้าช่วยเหลือ', c:'#2980b9'},
+            {s:'acknowledged', l:'รับทราบแล้ว', c:'#e67e22'},
+            {s:'completed', l:'ช่วยเหลือเสร็จสิ้น', c:'#27ae60'},
+            {s:'canceled', l:'ยกเลิกคำขอ', c:'#95a5a6'}
+        ];
+        opts.forEach(o => {
+            if (o.s === current) return;
+            const b = document.createElement('div');
+            b.textContent = o.l;
+            b.style.cssText = `background:${o.c};color:#fff;padding:20px;margin:12px 0;border-radius:16px;text-align:center;font-weight:900;font-size:1.3rem;cursor:pointer`;
+            b.onclick = () => {
+                if (confirm(`เปลี่ยนเป็น "${o.l}" ?`)) {
+                    fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
+                        method:'PUT', body:JSON.stringify(o.s)
+                    }).then(()=>load());
+                    document.body.removeChild(menu);
+                }
+            };
+            menu.appendChild(b);
+        });
+        const close = document.createElement('div');
+        close.textContent = 'ปิด';
+        close.style.cssText = 'background:#444;color:#fff;padding:16px;margin-top:20px;border-radius:16px;text-align:center;cursor:pointer;font-weight:bold';
+        close.onclick = () => document.body.removeChild(menu);
+        menu.appendChild(close);
+        document.body.appendChild(menu);
+    }
+
+    // โหลดทันที + ทุก 5 วินาที
     load();
     setInterval(load, 5000);
-    setTimeout(()=>map.invalidateSize(),500);
+    setTimeout(() => map.invalidateSize(), 600);
 </script>
 </body>
 </html>
