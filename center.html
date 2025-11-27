@@ -8,12 +8,16 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        /* Base Reset and Layout */
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
+        
+        /* Header & Sidebar */
         .header{position:fixed;top:0;left:0;right:0;height:52px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:700;color:#c41e3a}
         .sidebar{position:fixed;top:52px;left:0;bottom:0;width:460px;background:rgba(8,8,28,0.98);z-index:999;overflow-y:auto;padding:12px 14px;border-right:4px solid #c41e3a}
 
+        /* New Alert Pop-up */
         .alert-new{
             position:fixed;top:60px;left:50%;transform:translateX(-50%);
             background:#c41e3a;color:#fff;padding:14px 28px;border-radius:50px;
@@ -25,6 +29,7 @@
         @keyframes alertPop{0%{transform:translateX(-50%) scale(0.3);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes alertFade{to{opacity:0;transform:translateX(-50%) translateY(-20px)}}
 
+        /* Stats Bar */
         .stats-bar{background:rgba(196,30,58,0.15);border-radius:12px;padding:12px;margin-bottom:14px;border:1px solid rgba(196,30,58,0.4);text-align:center;font-weight:bold;font-size:1rem}
         .counter{display:inline-block;margin:0 12px}
         .counter.pending{color:#e74c3c}
@@ -32,15 +37,18 @@
         .counter.acknowledged{color:#e67e22}
         .counter.completed{color:#27ae60}
 
+        /* Filter Bar */
         .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,0.1)}
-        .filter-btn{padding:9px 15px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:0.9rem;font-weight:bold;cursor:pointer;transition:all 0.2s;flex:1;min-width:100px;text-align:center}
+        .filter-btn{padding:9px 15px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:0.9rem;font-weight:bold;cursor:pointer;transition:all 0.2s;flex:1;min-width:100px;text-align:center; color: #fff;}
         .filter-btn.active{background:#c41e3a;border-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.7);color:#fff;transform:scale(1.05)}
 
+        /* Case Card */
         .case{background:rgba(255,255,255,0.07);border-radius:12px;padding:15px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;position:relative;border-left:4px solid transparent}
         .case:hover{background:rgba(255,255,255,0.13)}
         .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.35)}
         .case.new{animation:newCase 1.5s ease-in-out}
         @keyframes newCase{0%,100%{border-left-color:transparent}50%{border-left-color:#c41e3a;border-left-width:8px;box-shadow:0 0 20px rgba(196,30,58,0.6)}}
+        
         .pri{position:absolute;top:9px;right:9px;background:#c41e3a;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold}
         .name{font-weight:700;font-size:1.22rem;margin-bottom:5px}
         .phone{color:#0ff;font-weight:bold;font-size:0.98rem;margin-bottom:7px}
@@ -48,14 +56,17 @@
         .detail-item{display:flex;align-items:center;gap:8px;font-size:0.96rem;color:#ffdd00;margin:4px 0}
         .detail-item i{font-size:1.1rem}
         .time{font-size:0.88rem;color:#bbb;margin-top:7px;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:8px;display:inline-block}
-        .btn{margin-top:12px;background:#c41e3a;color:#fff;padding:11px;border:none;border-radius:9px;width:100%;font-weight:bold;font-size:0.94rem;cursor:pointer}
+        .btn{margin-top:12px;background:#c41e3a;color:#fff;padding:11px;border:none;border-radius:9px;width:100%;font-weight:bold;font-size:0.94rem;cursor:pointer;transition:background 0.2s}
         .btn:hover{background:#e74c3c}
+        .no-location-notice{font-size:0.8rem;color:#f39c12;margin-top:5px;font-weight:bold}
 
+        /* Leaflet Marker Customization */
         .tiny-marker.new div{animation:blink 1.5s 3}
         @keyframes blink{0%,100%{transform:scale(1)}50%{transform:scale(3);box-shadow:0 0 30px #c41e3a}}
         .tiny-marker div{background:var(--color)!important;width:16px!important;height:16px!important;border-radius:50%!important;border:2.5px solid #fff!important;box-shadow:0 1px 6px #000!important;margin-left:-8px!important;margin-top:-8px!important}
         .tiny-marker.active div{transform:scale(2.2)!important;box-shadow:0 0 18px rgba(196,30,58,0.9)!important}
 
+        /* Leaflet Popup Customization */
         .leaflet-popup-content-wrapper{background:rgba(15,15,35,0.98)!important;color:#fff!important;border-radius:12px!important;box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;border:2px solid #c41e3a!important;padding:0!important}
         .leaflet-popup-content{margin:14px!important;line-height:1.5;font-size:0.95rem}
         .leaflet-popup-content b{font-size:1.15rem}
@@ -81,6 +92,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // --- Global Configuration ---
     const map = L.map('map').setView([13.94678, 100.56125], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -91,9 +103,21 @@
     const notified = new Set();
     let currentFilter = 'all';
 
+    // IMPORTANT: Replace with your actual Firebase URL if different
     const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
+    
+    // Status and Label Mapping
+    const statusMap = { 
+        'pending': 'รอช่วยเหลือ', 
+        'going': 'กำลังไป', 
+        'acknowledged': 'รับทราบแล้ว', 
+        'completed': 'เสร็จสิ้น',
+        'canceled': 'ยกเลิก'
+    };
 
-    // ฟังก์ชันแปลงเวลาเป็นแบบที่ต้องการ (ปีพุทธศักราช)
+    // --- Helper Functions ---
+
+    // Function to convert time to Thai format (B.E. year)
     function formatTime(timestamp) {
         const date = new Date(timestamp);
         const now = new Date();
@@ -114,51 +138,62 @@
         return `รับแจ้งเมื่อ: ${timeStr} ${dateStr} (${ago})`;
     }
 
+    // Play alert sound and vibration for new cases
     function playAlert() {
+        // Attempt to play sound, catch errors if user hasn't interacted with the page
         new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-loop-2979.mp3').play().catch(()=>{});
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     }
 
+    // Show a temporary banner for new cases
     function showNewCaseAlert(name) {
         const alert = document.createElement('div');
         alert.className = 'alert-new';
-        alert.innerHTML = `มีเคสใหม่! ${name || 'ผู้ประสบภัย'} ขอความช่วยเหลือด่วน`;
+        alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> มีเคสใหม่! <strong>${name || 'ผู้ประสบภัย'}</strong> ขอความช่วยเหลือด่วน`;
         document.body.appendChild(alert);
         setTimeout(() => alert.remove(), 7000);
     }
 
+    // Determine marker/card color based on status and types
     function getColor(r) {
         if (r.types?.some(t => /เสียชีวิต|ตาย|ศพ/.test(t))) return '#000000';
         if (r.status === 'completed') return '#27ae60';
         if (r.status === 'going') return '#2980b9';
         if (r.status === 'acknowledged') return '#e67e22';
         if (r.priority >= 5 || r.types?.some(t => /จมน้ำ/.test(t))) return '#c41e3a';
-        return '#e74c3c';
+        return '#e74c3c'; // Pending (default)
     }
 
+    // Get specific details/icons for display
     function getDetail(type) {
-        if (/อาหาร/.test(type)) return {icon:'อาหาร', text:'ต้องการอาหารและน้ำดื่ม'};
-        if (/ติดอยู่/.test(type)) return {icon:'บ้าน', text:'ติดอยู่ในบ้าน/พื้นที่สูง'};
-        if (/เด็ก/.test(type)) return {icon:'เด็ก', text:'มีเด็กเล็ก'};
-        if (/สูงอายุ/.test(type)) return {icon:'ผู้สูงอายุ', text:'มีผู้สูงอายุ'};
-        if (/ยา|เวช/.test(type)) return {icon:'ยา', text:'ต้องการยาหรือเวชภัณฑ์'};
-        if (/สัตว์เลี้ยง/.test(type)) return {icon:'สัตว์', text:'มีสัตว์เลี้ยง'};
-        if (/จมน้ำ/.test(type)) return {icon:'น้ำท่วม', text:'กำลังจมน้ำ เร่งด่วนมาก!'};
-        if (/เสียชีวิต|ศพ/.test(type)) return {icon:'เสียชีวิต', text:'มีผู้เสียชีวิต'};
-        return {icon:'ช่วย', text:type};
+        if (/อาหาร/.test(type)) return {icon:'<i class="fas fa-utensils"></i>', text:'ต้องการอาหารและน้ำดื่ม'};
+        if (/ติดอยู่/.test(type)) return {icon:'<i class="fas fa-home"></i>', text:'ติดอยู่ในบ้าน/พื้นที่สูง'};
+        if (/เด็ก/.test(type)) return {icon:'<i class="fas fa-child"></i>', text:'มีเด็กเล็ก'};
+        if (/สูงอายุ/.test(type)) return {icon:'<i class="fas fa-wheelchair"></i>', text:'มีผู้สูงอายุ'};
+        if (/ยา|เวช/.test(type)) return {icon:'<i class="fas fa-pills"></i>', text:'ต้องการยาหรือเวชภัณฑ์'};
+        if (/สัตว์เลี้ยง/.test(type)) return {icon:'<i class="fas fa-paw"></i>', text:'มีสัตว์เลี้ยง'};
+        if (/จมน้ำ/.test(type)) return {icon:'<i class="fas fa-water"></i>', text:'กำลังจมน้ำ เร่งด่วนมาก!'};
+        if (/เสียชีวิต|ศพ/.test(type)) return {icon:'<i class="fas fa-skull-crossbones"></i>', text:'มีผู้เสียชีวิต'};
+        return {icon:'<i class="fas fa-hands-helping"></i>', text:type};
     }
 
+    // Update the statistics bar
     function updateStats(counts) {
         statsEl.innerHTML = `ทั้งหมด <strong>${counts.all}</strong> เคส · <span class="counter pending">รอช่วยเหลือ ${counts.pending}</span> · <span class="counter going">กำลังไป ${counts.going}</span> · <span class="counter acknowledged">รับทราบแล้ว ${counts.acknowledged}</span> · <span class="counter completed">เสร็จสิ้น ${counts.completed}</span>`;
     }
 
+    // Filter the case list and markers
     function filterCases(filter) {
         currentFilter = filter;
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+        
+        // Filter case cards in the sidebar
         document.querySelectorAll('.case').forEach(card => {
             const status = card.dataset.status || 'pending';
             card.style.display = (filter === 'all' || status === filter) ? 'block' : 'none';
         });
+
+        // Filter markers on the map
         Object.keys(markers).forEach(id => {
             const m = markers[id];
             const status = m.options.status || 'pending';
@@ -170,24 +205,31 @@
         });
     }
 
+    // Highlight a case card and its corresponding marker
     function highlight(id) {
         document.querySelectorAll('.case').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tiny-marker').forEach(m => m.classList.remove('active'));
         const card = cards[id];
         if (card) {
             card.classList.add('active');
-            markers[id]?._icon?.classList.add('active');
+            // Scroll to the card
             card.scrollIntoView({behavior:'smooth', block:'nearest'});
+            // Highlight marker if it exists (i.e., has location)
+            if (markers[id]) markers[id]._icon?.classList.add('active');
         }
     }
+
+    // --- Core Data Loading and Rendering ---
 
     async function load() {
         let data = {};
         try {
+            // Use a dummy parameter to prevent caching issues
             const res = await fetch(DB_URL + '?t=' + Date.now());
             data = await res.json() || {};
         } catch(e) {
             list.innerHTML = '<div style="text-align:center;padding:80px;color:#f66">เชื่อมต่อไม่ได้<br><button onclick="location.reload()" style="margin-top:20px;background:#c41e3a;padding:12px 30px;border:none;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer">รีเฟรชใหม่</button></div>';
+            console.error('Fetch error:', e);
             return;
         }
 
@@ -200,13 +242,19 @@
         const counts = {all:0, pending:0, going:0, acknowledged:0, completed:0};
         const newIds = new Set();
         const fragment = document.createDocumentFragment();
+        // Sort by timestamp descending (newest first)
+        const sortedEntries = Object.entries(data).sort(([, a], [, b]) => b.timestamp - a.timestamp); 
 
-        Object.entries(data).forEach(([id, r]) => {
-            if (!r.location?.lat || !r.location?.lng) return;
-
+        const dataKeys = new Set(Object.keys(data));
+        
+        sortedEntries.forEach(([id, r]) => {
             const status = r.status || 'pending';
+            const color = getColor(r);
+            const hasLocation = r.location?.lat && r.location?.lng;
+
+            // --- 1. COUNT STATS & NOTIFY ---
             counts.all++;
-            counts[status]++;
+            counts[status] = (counts[status] || 0) + 1; // Robust counting
 
             if (status === 'pending' && !notified.has(id)) {
                 notified.add(id);
@@ -215,8 +263,29 @@
                 showNewCaseAlert(r.name);
             }
 
-            const color = getColor(r);
+            // --- 2. CREATE/UPDATE CARD (Handles cases with and without location) ---
+            let div = cards[id];
+            if (!div) {
+                // Create new card element if it doesn't exist
+                div = document.createElement('div');
+                div.id = `case-${id}`;
+                // Attach click listener to the card
+                div.onclick = () => {
+                    highlight(id);
+                    if (hasLocation && markers[id]) {
+                        map.setView([r.location.lat, r.location.lng], 17);
+                        markers[id].openPopup();
+                    }
+                };
+                cards[id] = div; // Save the reference
+            }
 
+            // Update classes and dataset (needed for filtering and new case animation)
+            const newClass = 'case' + (newIds.has(id) ? ' new' : '');
+            if (div.className !== newClass) div.className = newClass;
+            div.dataset.status = status;
+
+            // Generate Details HTML
             let detailsHTML = '';
             if (r.types?.length > 0) {
                 r.types.forEach(t => {
@@ -224,94 +293,117 @@
                     detailsHTML += `<div class="detail-item">${d.icon} ${d.text}</div>`;
                 });
             } else {
-                detailsHTML = '<div class="detail-item">ช่วย ขอความช่วยเหลือทั่วไป</div>';
+                detailsHTML = '<div class="detail-item"><i class="fas fa-hands-helping"></i> ขอความช่วยเหลือทั่วไป</div>';
             }
 
-            const div = document.createElement('div');
-            div.className = 'case' + (newIds.has(id) ? ' new' : '');
-            div.dataset.status = status;
+            // Update Card Content
             div.innerHTML = `
                 <div class="pri">P${r.priority || '?'}</div>
                 <div class="name">${r.name || 'ไม่ระบุชื่อ'}</div>
-                ${r.phone ? `<div class="phone">โทร: ${r.phone}</div>` : ''}
+                ${r.phone ? `<div class="phone"><i class="fas fa-phone"></i> โทร: <a href="tel:${r.phone}" style="color:inherit;text-decoration:none">${r.phone}</a></div>` : ''}
                 <div class="details">${detailsHTML}</div>
+                ${r.note ? `<div style="font-size:0.9rem;color:#ccc;margin-top:5px">หมายเหตุ: ${r.note}</div>` : ''}
+                ${!hasLocation ? '<div class="no-location-notice"><i class="fas fa-map-pin"></i> <strong>ไม่มีพิกัดบนแผนที่</strong></div>' : ''}
                 <div class="time">${formatTime(r.timestamp)}</div>
-                <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${status}')">เปลี่ยนสถานะ</button>
+                <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${status}')">สถานะปัจจุบัน: ${statusMap[status] || 'รอช่วยเหลือ'}</button>
             `;
 
-            div.onclick = () => {
-                map.setView([r.location.lat, r.location.lng], 17);
-                markers[id].openPopup();
-                highlight(id);
-            };
+            // Append to fragment for re-sorting (even existing cards need to be appended here)
+            fragment.appendChild(div); 
 
-            if (newIds.has(id)) {
-                fragment.prepend(div);
-            } else {
-                fragment.appendChild(div);
+            // --- 3. CREATE/UPDATE MARKER (ONLY IF LOCATION EXISTS) ---
+            if (hasLocation) {
+                const icon = L.divIcon({
+                    className: 'tiny-marker' + (newIds.has(id) ? ' new' : ''),
+                    html: `<div style="--color:${color}"></div>`,
+                    iconSize: [16,16],
+                    iconAnchor: [8,8],
+                    popupAnchor: [0, -10]
+                });
+
+                if (!markers[id]) {
+                    markers[id] = L.marker([r.location.lat, r.location.lng], {icon, status}).addTo(map);
+                } else {
+                    markers[id].setIcon(icon);
+                    markers[id].options.status = status;
+                    markers[id].setLatLng([r.location.lat, r.location.lng]); // Update position just in case
+                }
+
+                let popupDetails = r.types ? r.types.map(t => {
+                    const d = getDetail(t);
+                    return `${d.icon} ${d.text}`;
+                }).join('<br>') : 'ขอความช่วยเหลือทั่วไป';
+
+                markers[id].setPopupContent(`
+                    <b>${r.name || 'ไม่ระบุชื่อ'}</b><br>
+                    ${r.phone ? `โทร: <a href="tel:${r.phone}">${r.phone}</a><br>` : ''}
+                    ${popupDetails}<br>
+                    ${r.note ? `<small style="color:#ddd">หมายเหตุ: ${r.note}</small><br>` : ''}
+                    <small style="color:#aaa">${formatTime(r.timestamp)}</small><br><br>
+                    <button onclick="window.open('http://maps.google.com/maps?q=${r.location.lat},${r.location.lng}')" 
+                        style="background:#c41e3a;color:#fff;border:none;padding:11px;width:100%;border-radius:9px;font-weight:bold;cursor:pointer">
+                        <i class="fas fa-route"></i> นำทางด่วน
+                    </button>
+                `);
+
+                markers[id].off('mouseover').off('click'); // Remove old listeners
+                markers[id].on('mouseover', () => highlight(id));
+                markers[id].on('click', () => highlight(id));
+
+                if (newIds.has(id)) {
+                    map.setView([r.location.lat, r.location.lng], 17);
+                    setTimeout(() => markers[id].openPopup(), 800);
+                }
+            } else if (markers[id]) {
+                // If location is removed from data, remove the marker
+                map.removeLayer(markers[id]);
+                delete markers[id];
             }
-            cards[id] = div;
-
-            const icon = L.divIcon({
-                className: 'tiny-marker' + (newIds.has(id) ? ' new' : ''),
-                html: `<div style="--color:${color}"></div>`,
-                iconSize: [16,16],
-                iconAnchor: [8,8],
-                popupAnchor: [0, -10]
-            });
-
-            if (!markers[id]) {
-                markers[id] = L.marker([r.location.lat, r.location.lng], {icon, status}).addTo(map);
-            } else {
-                markers[id].setIcon(icon);
-                markers[id].options.status = status;
-            }
-
-            let popupDetails = r.types ? r.types.map(t => {
-                const d = getDetail(t);
-                return `${d.icon} ${d.text}`;
-            }).join('<br>') : 'ขอความช่วยเหลือทั่วไป';
-
-            markers[id].bindPopup(`
-                <b>${r.name || 'ไม่ระบุชื่อ'}</b><br>
-                ${r.phone ? `โทร: <a href="tel:${r.phone}">${r.phone}</a><br>` : ''}
-                ${popupDetails}<br>
-                <small style="color:#aaa">${formatTime(r.timestamp)}</small><br><br>
-                <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')" 
-                    style="background:#c41e3a;color:#fff;border:none;padding:11px;width:100%;border-radius:9px;font-weight:bold">
-                    นำทางด่วน
-                </button>
-            `, {maxWidth: 300});
-
-            markers[id].on('mouseover', () => highlight(id));
-            markers[id].on('click', () => highlight(id));
-
-            if (newIds.has(id)) {
-                map.setView([r.location.lat, r.location.lng], 17);
-                setTimeout(() => markers[id].openPopup(), 800);
+        });
+        
+        // --- 4. REMOVE DELETED CASES ---
+        Object.keys(cards).forEach(id => {
+            if (!dataKeys.has(id)) {
+                // Remove card
+                if (cards[id]) cards[id].remove();
+                delete cards[id];
+                notified.delete(id);
+                // Remove marker if it exists
+                if (markers[id]) {
+                    map.removeLayer(markers[id]);
+                    delete markers[id];
+                }
             }
         });
 
+        // The list is now sorted by timestamp within the fragment. 
+        // We clear the list and re-append the fragment (which contains all updated cards in the correct order).
         list.innerHTML = '';
-        list.prepend(fragment);
+        list.appendChild(fragment);
+
         updateStats(counts);
-        filterCases(currentFilter);
+        filterCases(currentFilter); // Reapply filter to ensure correct display
     }
 
+    // --- Event Listeners and Initial Load ---
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => filterCases(btn.dataset.filter));
     });
 
+    // Function to handle status change popup
     function changeStatus(id, current) {
         const menu = document.createElement('div');
         menu.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:3px solid #c41e3a;border-radius:12px;z-index:99999;width:300px;text-align:center';
         menu.innerHTML = `<h3 style="color:#c41e3a;margin-bottom:15px">เปลี่ยนสถานะ</h3>`;
+        
         const opts = [
-            {s:'going', l:'กำลังไป', c:'#2980b9'},
-            {s:'acknowledged', l:'รับทราบแล้ว', c:'#e67e22'},
-            {s:'completed', l:'เสร็จสิ้น', c:'#27ae60'},
-            {s:'canceled', l:'ยกเลิก', c:'#95a5a6'}
+            {s:'pending', l: statusMap.pending, c:'#e74c3c'}, 
+            {s:'going', l: statusMap.going, c:'#2980b9'},
+            {s:'acknowledged', l: statusMap.acknowledged, c:'#e67e22'},
+            {s:'completed', l: statusMap.completed, c:'#27ae60'},
+            {s:'canceled', l: statusMap.canceled, c:'#95a5a6'}
         ];
+
         opts.forEach(o => {
             if (o.s === current) return;
             const b = document.createElement('button');
@@ -319,11 +411,20 @@
             b.style = `background:${o.c};color:#fff;border:none;padding:14px;margin:6px 0;width:100%;border-radius:9px;font-weight:bold;cursor:pointer`;
             b.onclick = () => {
                 fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
-                    method:'PUT', body:JSON.stringify(o.s)
-                }).then(() => location.reload());
+                    method:'PUT', 
+                    body:JSON.stringify(o.s)
+                }).then(() => {
+                    // Instead of full reload, just call load() to fetch new data and update UI smoothly
+                    load(); 
+                    menu.remove();
+                }).catch(err => {
+                    console.error('Failed to update status:', err);
+                    alert('ไม่สามารถอัปเดตสถานะได้ ลองใหม่อีกครั้ง');
+                });
             };
             menu.appendChild(b);
         });
+        
         const close = document.createElement('button');
         close.textContent = 'ปิด';
         close.style = 'margin-top:15px;background:#444;color:#fff;padding:10px;width:100%;border:none;border-radius:9px;cursor:pointer';
@@ -331,9 +432,14 @@
         menu.appendChild(close);
         document.body.appendChild(menu);
     }
-
+    // Make changeStatus function globally accessible for button in card/popup
+    window.changeStatus = changeStatus;
+    
+    // Initial call and periodic update
     load();
     setInterval(load, 6000);
+    
+    // Fix map rendering issue on initial load
     setTimeout(() => map.invalidateSize(), 500);
 </script>
 </body>
