@@ -3,49 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์ช่วยเหลือน้ำท่วม</title>
+    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
-        .header{position:fixed;top:0;left:0;right:0;height:56px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#c41e3a}
-        .sidebar{position:fixed;top:56px;left:0;bottom:0;width:380px;background:rgba(10,10,30,0.98);z-index:999;overflow-y:auto;padding:12px 16px;border-right:4px solid #c41e3a}
-        .item{background:rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;position:relative;font-size:0.95rem;line-height:1.5;transition:all 0.2s}
-        .item:hover{background:rgba(255,255,255,0.14)}
-        .item.active{background:rgba(196,30,58,0.25);border:1px solid #c41e3a;box-shadow:0 0 15px rgba(196,30,58,0.4)}
-        .pri{position:absolute;top:6px;right:6px;background:#c41e3a;color:#fff;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:bold}
-        .name{font-weight:700;font-size:1.2rem;margin-bottom:3px}
-        .phone{color:#0ff;font-weight:bold;font-size:0.95rem}
-        .types{color:#ffdd00;margin:5px 0;font-size:0.92rem}
-        .time{font-size:0.85rem;color:#aaa;margin-top:6px}
-        .btn{margin-top:10px;background:#c41e3a;color:#fff;padding:9px;border:none;border-radius:8px;width:100%;font-weight:bold;font-size:0.9rem;cursor:pointer}
+        .header{position:fixed;top:0;left:0;right:0;height:52px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:700;color:#c41e3a}
+        .sidebar{position:fixed;top:52px;left:0;bottom:0;width:460px;background:rgba(8,8,28,0.98);z-index:999;overflow-y:auto;padding:12px 14px;border-right:4px solid #c41e3a}
+        .case{background:rgba(255,255,255,0.07);border-radius:12px;padding:15px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;position:relative;border-left:4px solid transparent}
+        .case:hover{background:rgba(255,255,255,0.13)}
+        .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41x3a;box-shadow:0 0 14px rgba(196,30,58,0.35)}
+        .pri{position:absolute;top:9px;right:9px;background:#c41e3a;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold}
+        .name{font-weight:700;font-size:1.22rem;margin-bottom:5px}
+        .phone{color:#0ff;font-weight:bold;font-size:0.98rem;margin-bottom:7px}
+        .details{margin:8px 0;line-height:1.5}
+        .detail-item{display:flex;align-items:center;gap:8px;font-size:0.96rem;color:#ffdd00;margin:4px 0}
+        .detail-item i{font-size:1.1rem}
+        .time{font-size:0.88rem;color:#bbb;margin-top:7px}
+        .btn{margin-top:12px;background:#c41e3a;color:#fff;padding:11px;border:none;border-radius:9px;width:100%;font-weight:bold;font-size:0.94rem;cursor:pointer}
         .btn:hover{background:#e74c3c}
-        .dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin-right:8px;border:2px solid #fff}
-        .loading{text-align:center;padding:60px;color:#c41e3a;font-size:1.3rem}
-        /* Marker วงกลมล้วน ไม่มีพื้นหลังสี่เหลี่ยมเด็ดขาด */
-        .clean-marker div {
-            background:var(--color) !important;
-            width:20px !important;height:20px !important;
-            border-radius:50% !important;
-            border:3px solid #fff !important;
-            box-shadow:0 2px 10px rgba(0,0,0,0.6) !important;
-            margin-left:-10px !important;margin-top:-10px !important;
+
+        /* Marker เล็ก + Popup ชี้ตรงจุดเป๊ะ */
+        .tiny-marker div{
+            background:var(--color)!important;width:16px!important;height:16px!important;border-radius:50%!important;
+            border:2.5px solid #fff!important;box-shadow:0 1px 6px #000!important;
+            margin-left:-8px!important;margin-top:-8px!important
         }
-        .clean-marker img{display:none !important}
-        .clean-marker.active div{
-            transform:scale(1.6);
-            box-shadow:0 0 20px rgba(196,30,58,0.9) !important;
+        .tiny-marker.active div{transform:scale(2.2)!important;box-shadow:0 0 18px rgba(196,30,58,0.9)!important}
+        .tiny-marker img{display:none!important}
+
+        /* Popup สวย + ชี้ตรงจุด */
+        .leaflet-popup-content-wrapper{
+            background:rgba(15,15,35,0.98)!important;
+            color:#fff!important;
+            border-radius:12px!important;
+            box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;
+            border:2px solid #c41e3a!important;
+            padding:0!important;
         }
+        .leaflet-popup-content{
+            margin:14px!important;
+            line-height:1.5;
+            font-size:0.95rem;
+        }
+        .leaflet-popup-content b{font-size:1.15rem}
+        .leaflet-popup-content a{color:#0ff;text-decoration:none}
+        .leaflet-popup-tip{background:#c41e3a!important;box-shadow:none!important}
+        .leaflet-popup-close-button{color:#fff!important;font-size:1.4rem!important;top:8px!important;right:10px!important}
     </style>
 </head>
 <body>
 
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-<div class="sidebar">
-    <div id="list" class="loading">กำลังโหลด...</div>
-</div>
+<div class="sidebar"><div id="list">กำลังโหลด...</div></div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -58,6 +71,8 @@
     const list = document.getElementById('list');
     const notified = new Set();
 
+    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
+
     function getColor(r) {
         if (r.types?.some(t => /เสียชีวิต|ตาย|ศพ/.test(t))) return '#000000';
         if (r.status === 'completed') return '#27ae60';
@@ -67,9 +82,21 @@
         return '#e74c3c';
     }
 
+    function getDetail(type) {
+        if (/อาหาร/.test(type)) return {icon:'อาหาร', text:'ต้องการอาหารและน้ำดื่ม'};
+        if (/ติดอยู่/.test(type)) return {icon:'บ้าน', text:'ติดอยู่ในบ้าน/พื้นที่สูง'};
+        if (/เด็ก/.test(type)) return {icon:'เด็ก', text:'มีเด็กเล็ก'};
+        if (/สูงอายุ/.test(type)) return {icon:'ผู้สูงอายุ', text:'มีผู้สูงอายุ'};
+        if (/ยา|เวช/.test(type)) return {icon:'ยา', text:'ต้องการยาหรือเวชภัณฑ์'};
+        if (/สัตว์เลี้ยง/.test(type)) return {icon:'สัตว์', text:'มีสัตว์เลี้ยง'};
+        if (/จมน้ำ/.test(type)) return {icon:'น้ำท่วม', text:'กำลังจมน้ำ เร่งด่วนมาก!'};
+        if (/เสียชีวิต|ศพ/.test(type)) return {icon:'เสียชีวิต', text:'มีผู้เสียชีวิต'};
+        return {icon:'ช่วย', text:type};
+    }
+
     function highlight(id) {
-        document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
-        document.querySelectorAll('.clean-marker').forEach(m => m.classList.remove('active'));
+        document.querySelectorAll('.case').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tiny-marker').forEach(m => m.classList.remove('active'));
         cards[id]?.classList.add('active');
         markers[id]?._icon?.classList.add('active');
         cards[id]?.scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -78,16 +105,15 @@
     async function load() {
         let data = {};
         try {
-            const r = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json?t=' + Date.now());
-            data = await r.json() || {};
+            const res = await fetch(DB_URL + '?t=' + Date.now());
+            data = await res.json() || {};
         } catch(e) {
-            list.innerHTML = '<div class="loading">กำลังเชื่อมต่อใหม่...</div>';
-            setTimeout(load, 3000);
+            list.innerHTML = '<div style="text-align:center;padding:80px;color:#f66">เชื่อมต่อไม่ได้<br><button onclick="location.reload()" style="margin-top:20px;background:#c41e3a;padding:12px 30px;border:none;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer">รีเฟรชใหม่</button></div>';
             return;
         }
 
         if (Object.keys(data).length === 0) {
-            list.innerHTML = '<div class="loading">ยังไม่มีคำขอช่วยเหลือ</div>';
+            list.innerHTML = '<div style="text-align:center;padding:100px;color:#888">ยังไม่มีคำขอช่วยเหลือ</div>';
             return;
         }
 
@@ -95,7 +121,7 @@
         const newIds = new Set();
 
         Object.entries(data).forEach(([id, r]) => {
-            if (!r.location?.lat) return;
+            if (!r.location?.lat || !r.location?.lng) return;
 
             if ((r.status || 'pending') === 'pending' && !notified.has(id)) {
                 notified.add(id);
@@ -105,13 +131,23 @@
 
             const color = getColor(r);
 
+            let detailsHTML = '';
+            if (r.types?.length > 0) {
+                r.types.forEach(t => {
+                    const d = getDetail(t);
+                    detailsHTML += `<div class="detail-item">${d.icon} ${d.text}</div>`;
+                });
+            } else {
+                detailsHTML = '<div class="detail-item">ช่วย ขอความช่วยเหลือทั่วไป</div>';
+            }
+
             const div = document.createElement('div');
-            div.className = 'item';
+            div.className = 'case';
             div.innerHTML = `
                 <div class="pri">P${r.priority || '?'}</div>
-                <div class="name"><span class="dot" style="background:${color}"></span>${r.name || 'ไม่ระบุชื่อ'}</div>
+                <div class="name">${r.name || 'ไม่ระบุชื่อ'}</div>
                 ${r.phone ? `<div class="phone">โทร: ${r.phone}</div>` : ''}
-                <div class="types">${r.types ? r.types.join(' • ') : 'ขอความช่วยเหลือ'}</div>
+                <div class="details">${detailsHTML}</div>
                 <div class="time">${new Date(r.timestamp).toLocaleString('th-TH', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}</div>
                 <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${r.status||'pending'}')">เปลี่ยนสถานะ</button>
             `;
@@ -125,12 +161,13 @@
             list.appendChild(div);
             cards[id] = div;
 
-            // Marker วงกลมสะอาด 100%
+            // Marker + Popup ชี้ตรงจุดเป๊ะ
             const icon = L.divIcon({
-                className: 'clean-marker',
+                className: 'tiny-marker',
                 html: `<div style="--color:${color}"></div>`,
-                iconSize: [20,20],
-                iconAnchor: [10,10]
+                iconSize: [16,16],
+                iconAnchor: [8,8],
+                popupAnchor: [0, -10]  // สำคัญมาก! ทำให้ popup ชี้ตรงกลางจุด
             });
 
             if (!markers[id]) {
@@ -139,31 +176,39 @@
                 markers[id].setIcon(icon);
             }
 
+            let popupDetails = r.types ? r.types.map(t => {
+                const d = getDetail(t);
+                return `${d.icon} ${d.text}`;
+            }).join('<br>') : 'ขอความช่วยเหลือทั่วไป';
+
             markers[id].bindPopup(`
-                <b style="font-size:1.1rem">${r.name||'ไม่ระบุชื่อ'}</b><br>
+                <b>${r.name || 'ไม่ระบุชื่อ'}</b><br>
                 ${r.phone ? `โทร: <a href="tel:${r.phone}">${r.phone}</a><br>` : ''}
-                <small>${r.types ? r.types.join(' • ') : 'ขอความช่วยเหลือ'}</small><br>
+                ${popupDetails}<br>
                 <small style="color:#aaa">${new Date(r.timestamp).toLocaleString('th-TH')}</small><br><br>
                 <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')" 
-                    style="background:#c41e3a;color:#fff;border:none;padding:10px;width:100%;border-radius:8px;font-weight:bold">
+                    style="background:#c41e3a;color:#fff;border:none;padding:11px;width:100%;border-radius:9px;font-weight:bold">
                     นำทางด่วน
                 </button>
-            `);
+            `, {
+                maxWidth: 300,
+                className: 'custom-popup'
+            });
 
             markers[id].on('mouseover', () => highlight(id));
             markers[id].on('click', () => highlight(id));
 
             if (newIds.has(id)) {
                 map.setView([r.location.lat, r.location.lng], 17);
-                setTimeout(() => markers[id].openPopup(), 500);
+                setTimeout(() => markers[id].openPopup(), 600);
             }
         });
     }
 
     function changeStatus(id, current) {
         const menu = document.createElement('div');
-        menu.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:3px solid #c41e3a;border-radius:12px;z-index:99999;width:280px;text-align:center';
-        menu.innerHTML = '<h3 style="color:#c41e3a;margin-bottom:15px">เปลี่ยนสถานะ</h3>';
+        menu.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:3px solid #c41e3a;border-radius:12px;z-index:99999;width:300px;text-align:center';
+        menu.innerHTML = `<h3 style="color:#c41e3a;margin-bottom:15px">เปลี่ยนสถานะ</h3>`;
         const opts = [
             {s:'going', l:'กำลังไป', c:'#2980b9'},
             {s:'acknowledged', l:'รับทราบแล้ว', c:'#e67e22'},
@@ -174,7 +219,7 @@
             if (o.s === current) return;
             const b = document.createElement('button');
             b.textContent = o.l;
-            b.style.cssText = `background:${o.c};color:#fff;border:none;padding:12px;margin:5px 0;width:100%;border-radius:8px;font-weight:bold;cursor:pointer`;
+            b.style = `background:${o.c};color:#fff;border:none;padding:14px;margin:6px 0;width:100%;border-radius:9px;font-weight:bold;cursor:pointer`;
             b.onclick = () => {
                 fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
                     method:'PUT', body:JSON.stringify(o.s)
@@ -184,7 +229,7 @@
         });
         const close = document.createElement('button');
         close.textContent = 'ปิด';
-        close.style.cssText = 'margin-top:15px;background:#444;color:#fff;padding:10px;width:100%;border:none;border-radius:8px;cursor:pointer';
+        close.style = 'margin-top:15px;background:#444;color:#fff;padding:10px;width:100%;border:none;border-radius:9px;cursor:pointer';
         close.onclick = () => menu.remove();
         menu.appendChild(close);
         document.body.appendChild(menu);
