@@ -33,7 +33,7 @@
 firebase.initializeApp({databaseURL:"https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app"});
 const db = firebase.database().ref("sos_requests");
 
-const map = L.map('Location').setView([13.7563, 100.5018], 10);
+const map = L.map('map').setView([13.7563, 100.5018], 10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
@@ -111,3 +111,4 @@ function stop() {
 </script>
 </body>
 </html>
+
