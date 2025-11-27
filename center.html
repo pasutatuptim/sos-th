@@ -13,57 +13,50 @@
         #map{height:100vh;width:100%}
         .header{position:fixed;top:0;left:0;right:0;height:52px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:700;color:#c41e3a}
         .sidebar{position:fixed;top:52px;left:0;bottom:0;width:460px;background:rgba(8,8,28,0.98);z-index:999;overflow-y:auto;padding:12px 14px;border-right:4px solid #c41e3a}
-        
-        /* Counter + ปุ่มกรอง */
-        .stats-bar{
-            background:rgba(196,30,58,0.15);border-radius:12px;padding:12px;margin-bottom:14px;
-            border:1px solid rgba(196,30,58,0.4);text-align:center;font-weight:bold;font-size:1rem
+
+        .alert-new{
+            position:fixed;top:60px;left:50%;transform:translateX(-50%);
+            background:#c41e3a;color:#fff;padding:14px 28px;border-radius:50px;
+            font-weight:bold;font-size:1.1rem;z-index:99999;
+            box-shadow:0 8px 30px rgba(196,30,58,0.8);
+            animation:alertPop 0.6s ease-out, alertFade 6s 1s forwards;
+            white-space:nowrap;display:flex;align-items:center;gap:12px
         }
-        .counter{
-            display:inline-block;margin:0 12px;color:#fff
-        }
+        @keyframes alertPop{0%{transform:translateX(-50%) scale(0.3);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+        @keyframes alertFade{to{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+
+        .stats-bar{background:rgba(196,30,58,0.15);border-radius:12px;padding:12px;margin-bottom:14px;border:1px solid rgba(196,30,58,0.4);text-align:center;font-weight:bold;font-size:1rem}
+        .counter{display:inline-block;margin:0 12px}
         .counter.pending{color:#e74c3c}
         .counter.going{color:#2980b9}
         .counter.acknowledged{color:#e67e22}
         .counter.completed{color:#27ae60}
 
-        .filter-bar{
-            display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,0.1)
-        }
-        .filter-btn{
-            padding:9px 15px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-            font-size:0.9rem;font-weight:bold;cursor:pointer;transition:all 0.2s;flex:1;min-width:100px;text-align:center
-        }
-        .filter-btn.active{
-            background:#c41e3a;border-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.7);color:#fff;transform:scale(1.05)
-        }
-        .filter-btn:hover:not(.active){background:rgba(255,255,255,0.2)}
+        .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,0.1)}
+        .filter-btn{padding:9px 15px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:0.9rem;font-weight:bold;cursor:pointer;transition:all 0.2s;flex:1;min-width:100px;text-align:center}
+        .filter-btn.active{background:#c41e3a;border-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.7);color:#fff;transform:scale(1.05)}
 
         .case{background:rgba(255,255,255,0.07);border-radius:12px;padding:15px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;position:relative;border-left:4px solid transparent}
         .case:hover{background:rgba(255,255,255,0.13)}
         .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.35)}
+        .case.new{animation:newCase 1.5s ease-in-out}
+        @keyframes newCase{0%,100%{border-left-color:transparent}50%{border-left-color:#c41e3a;border-left-width:8px;box-shadow:0 0 20px rgba(196,30,58,0.6)}}
         .pri{position:absolute;top:9px;right:9px;background:#c41e3a;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold}
         .name{font-weight:700;font-size:1.22rem;margin-bottom:5px}
         .phone{color:#0ff;font-weight:bold;font-size:0.98rem;margin-bottom:7px}
         .details{margin:8px 0;line-height:1.5}
         .detail-item{display:flex;align-items:center;gap:8px;font-size:0.96rem;color:#ffdd00;margin:4px 0}
         .detail-item i{font-size:1.1rem}
-        .time{font-size:0.88rem;color:#bbb;margin-top:7px}
+        .time{font-size:0.88rem;color:#bbb;margin-top:7px;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:8px;display:inline-block}
         .btn{margin-top:12px;background:#c41e3a;color:#fff;padding:11px;border:none;border-radius:9px;width:100%;font-weight:bold;font-size:0.94rem;cursor:pointer}
         .btn:hover{background:#e74c3c}
 
-        .tiny-marker div{
-            background:var(--color)!important;width:16px!important;height:16px!important;border-radius:50%!important;
-            border:2.5px solid #fff!important;box-shadow:0 1px 6px #000!important;
-            margin-left:-8px!important;margin-top:-8px!important
-        }
+        .tiny-marker.new div{animation:blink 1.5s 3}
+        @keyframes blink{0%,100%{transform:scale(1)}50%{transform:scale(3);box-shadow:0 0 30px #c41e3a}}
+        .tiny-marker div{background:var(--color)!important;width:16px!important;height:16px!important;border-radius:50%!important;border:2.5px solid #fff!important;box-shadow:0 1px 6px #000!important;margin-left:-8px!important;margin-top:-8px!important}
         .tiny-marker.active div{transform:scale(2.2)!important;box-shadow:0 0 18px rgba(196,30,58,0.9)!important}
-        .tiny-marker img{display:none!important}
 
-        .leaflet-popup-content-wrapper{
-            background:rgba(15,15,35,0.98)!important;color:#fff!important;border-radius:12px!important;
-            box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;border:2px solid #c41e3a!important;padding:0!important
-        }
+        .leaflet-popup-content-wrapper{background:rgba(15,15,35,0.98)!important;color:#fff!important;border-radius:12px!important;box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;border:2px solid #c41e3a!important;padding:0!important}
         .leaflet-popup-content{margin:14px!important;line-height:1.5;font-size:0.95rem}
         .leaflet-popup-content b{font-size:1.15rem}
         .leaflet-popup-content a{color:#0ff;text-decoration:none}
@@ -74,9 +67,7 @@
 
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
 <div class="sidebar">
-    <div class="stats-bar" id="stats">
-        กำลังโหลดจำนวนเคส...
-    </div>
+    <div class="stats-bar" id="stats">กำลังโหลดจำนวนเคส...</div>
     <div class="filter-bar">
         <div class="filter-btn active" data-filter="all">ทั้งหมด</div>
         <div class="filter-btn" data-filter="pending">รอช่วยเหลือ</div>
@@ -102,6 +93,40 @@
 
     const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
 
+    // ฟังก์ชันแปลงเวลาเป็นแบบที่ต้องการ (ปีพุทธศักราช)
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMin = Math.floor(diffMs / 60000);
+        const diffHr = Math.floor(diffMs / 3600000);
+        const diffDay = Math.floor(diffMs / 86400000);
+
+        let timeStr = date.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'});
+        let dateStr = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear() + 543}`;
+
+        let ago = '';
+        if (diffMin < 1) ago = 'เมื่อสักครู่นี้';
+        else if (diffMin < 60) ago = `${diffMin} นาทีที่แล้ว`;
+        else if (diffHr < 24) ago = `${diffHr} ชั่วโมงที่แล้ว`;
+        else ago = `${diffDay} วันที่แล้ว`;
+
+        return `รับแจ้งเมื่อ: ${timeStr} ${dateStr} (${ago})`;
+    }
+
+    function playAlert() {
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-loop-2979.mp3').play().catch(()=>{});
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+
+    function showNewCaseAlert(name) {
+        const alert = document.createElement('div');
+        alert.className = 'alert-new';
+        alert.innerHTML = `มีเคสใหม่! ${name || 'ผู้ประสบภัย'} ขอความช่วยเหลือด่วน`;
+        document.body.appendChild(alert);
+        setTimeout(() => alert.remove(), 7000);
+    }
+
     function getColor(r) {
         if (r.types?.some(t => /เสียชีวิต|ตาย|ศพ/.test(t))) return '#000000';
         if (r.status === 'completed') return '#27ae60';
@@ -124,20 +149,12 @@
     }
 
     function updateStats(counts) {
-        statsEl.innerHTML = `
-            ทั้งหมด <strong>${counts.all}</strong> เคส · 
-            <span class="counter pending">รอช่วยเหลือ ${counts.pending}</span> · 
-            <span class="counter going">กำลังไป ${counts.going}</span> · 
-            <span class="counter acknowledged">รับทราบแล้ว ${counts.acknowledged}</span> · 
-            <span class="counter completed">เสร็จสิ้น ${counts.completed}</span>
-        `;
+        statsEl.innerHTML = `ทั้งหมด <strong>${counts.all}</strong> เคส · <span class="counter pending">รอช่วยเหลือ ${counts.pending}</span> · <span class="counter going">กำลังไป ${counts.going}</span> · <span class="counter acknowledged">รับทราบแล้ว ${counts.acknowledged}</span> · <span class="counter completed">เสร็จสิ้น ${counts.completed}</span>`;
     }
 
     function filterCases(filter) {
         currentFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === filter);
-        });
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
         document.querySelectorAll('.case').forEach(card => {
             const status = card.dataset.status || 'pending';
             card.style.display = (filter === 'all' || status === filter) ? 'block' : 'none';
@@ -171,7 +188,6 @@
             data = await res.json() || {};
         } catch(e) {
             list.innerHTML = '<div style="text-align:center;padding:80px;color:#f66">เชื่อมต่อไม่ได้<br><button onclick="location.reload()" style="margin-top:20px;background:#c41e3a;padding:12px 30px;border:none;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer">รีเฟรชใหม่</button></div>';
-            statsEl.textContent = 'ไม่สามารถโหลดข้อมูลได้';
             return;
         }
 
@@ -190,12 +206,13 @@
 
             const status = r.status || 'pending';
             counts.all++;
-            counts[status] = (counts[status] || 0) + 1;
+            counts[status]++;
 
             if (status === 'pending' && !notified.has(id)) {
                 notified.add(id);
                 newIds.add(id);
-                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3').play().catch(()=>{});
+                playAlert();
+                showNewCaseAlert(r.name);
             }
 
             const color = getColor(r);
@@ -211,14 +228,14 @@
             }
 
             const div = document.createElement('div');
-            div.className = 'case';
+            div.className = 'case' + (newIds.has(id) ? ' new' : '');
             div.dataset.status = status;
             div.innerHTML = `
                 <div class="pri">P${r.priority || '?'}</div>
                 <div class="name">${r.name || 'ไม่ระบุชื่อ'}</div>
                 ${r.phone ? `<div class="phone">โทร: ${r.phone}</div>` : ''}
                 <div class="details">${detailsHTML}</div>
-                <div class="time">${new Date(r.timestamp).toLocaleString('th-TH', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}</div>
+                <div class="time">${formatTime(r.timestamp)}</div>
                 <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${status}')">เปลี่ยนสถานะ</button>
             `;
 
@@ -228,11 +245,15 @@
                 highlight(id);
             };
 
-            fragment.appendChild(div);
+            if (newIds.has(id)) {
+                fragment.prepend(div);
+            } else {
+                fragment.appendChild(div);
+            }
             cards[id] = div;
 
             const icon = L.divIcon({
-                className: 'tiny-marker',
+                className: 'tiny-marker' + (newIds.has(id) ? ' new' : ''),
                 html: `<div style="--color:${color}"></div>`,
                 iconSize: [16,16],
                 iconAnchor: [8,8],
@@ -240,10 +261,7 @@
             });
 
             if (!markers[id]) {
-                markers[id] = L.marker([r.location.lat, r.location.lng], {
-                    icon: icon,
-                    status: status
-                }).addTo(map);
+                markers[id] = L.marker([r.location.lat, r.location.lng], {icon, status}).addTo(map);
             } else {
                 markers[id].setIcon(icon);
                 markers[id].options.status = status;
@@ -258,7 +276,7 @@
                 <b>${r.name || 'ไม่ระบุชื่อ'}</b><br>
                 ${r.phone ? `โทร: <a href="tel:${r.phone}">${r.phone}</a><br>` : ''}
                 ${popupDetails}<br>
-                <small style="color:#aaa">${new Date(r.timestamp).toLocaleString('th-TH')}</small><br><br>
+                <small style="color:#aaa">${formatTime(r.timestamp)}</small><br><br>
                 <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')" 
                     style="background:#c41e3a;color:#fff;border:none;padding:11px;width:100%;border-radius:9px;font-weight:bold">
                     นำทางด่วน
@@ -270,22 +288,20 @@
 
             if (newIds.has(id)) {
                 map.setView([r.location.lat, r.location.lng], 17);
-                setTimeout(() => markers[id].openPopup(), 600);
+                setTimeout(() => markers[id].openPopup(), 800);
             }
         });
 
         list.innerHTML = '';
-        list.appendChild(fragment);
+        list.prepend(fragment);
         updateStats(counts);
         filterCases(currentFilter);
     }
 
-    // ปุ่มกรอง
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => filterCases(btn.dataset.filter));
     });
 
-    // เปลี่ยนสถานะ
     function changeStatus(id, current) {
         const menu = document.createElement('div');
         menu.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:3px solid #c41e3a;border-radius:12px;z-index:99999;width:300px;text-align:center';
