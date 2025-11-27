@@ -13,9 +13,35 @@
         #map{height:100vh;width:100%}
         .header{position:fixed;top:0;left:0;right:0;height:52px;background:#111;border-bottom:4px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:700;color:#c41e3a}
         .sidebar{position:fixed;top:52px;left:0;bottom:0;width:460px;background:rgba(8,8,28,0.98);z-index:999;overflow-y:auto;padding:12px 14px;border-right:4px solid #c41e3a}
+        
+        /* Counter + ปุ่มกรอง */
+        .stats-bar{
+            background:rgba(196,30,58,0.15);border-radius:12px;padding:12px;margin-bottom:14px;
+            border:1px solid rgba(196,30,58,0.4);text-align:center;font-weight:bold;font-size:1rem
+        }
+        .counter{
+            display:inline-block;margin:0 12px;color:#fff
+        }
+        .counter.pending{color:#e74c3c}
+        .counter.going{color:#2980b9}
+        .counter.acknowledged{color:#e67e22}
+        .counter.completed{color:#27ae60}
+
+        .filter-bar{
+            display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,0.1)
+        }
+        .filter-btn{
+            padding:9px 15px;border-radius:9px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+            font-size:0.9rem;font-weight:bold;cursor:pointer;transition:all 0.2s;flex:1;min-width:100px;text-align:center
+        }
+        .filter-btn.active{
+            background:#c41e3a;border-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.7);color:#fff;transform:scale(1.05)
+        }
+        .filter-btn:hover:not(.active){background:rgba(255,255,255,0.2)}
+
         .case{background:rgba(255,255,255,0.07);border-radius:12px;padding:15px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;position:relative;border-left:4px solid transparent}
         .case:hover{background:rgba(255,255,255,0.13)}
-        .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41x3a;box-shadow:0 0 14px rgba(196,30,58,0.35)}
+        .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41e3a;box-shadow:0 0 14px rgba(196,30,58,0.35)}
         .pri{position:absolute;top:9px;right:9px;background:#c41e3a;color:#fff;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold}
         .name{font-weight:700;font-size:1.22rem;margin-bottom:5px}
         .phone{color:#0ff;font-weight:bold;font-size:0.98rem;margin-bottom:7px}
@@ -26,7 +52,6 @@
         .btn{margin-top:12px;background:#c41e3a;color:#fff;padding:11px;border:none;border-radius:9px;width:100%;font-weight:bold;font-size:0.94rem;cursor:pointer}
         .btn:hover{background:#e74c3c}
 
-        /* Marker เล็ก + Popup ชี้ตรงจุดเป๊ะ */
         .tiny-marker div{
             background:var(--color)!important;width:16px!important;height:16px!important;border-radius:50%!important;
             border:2.5px solid #fff!important;box-shadow:0 1px 6px #000!important;
@@ -35,30 +60,32 @@
         .tiny-marker.active div{transform:scale(2.2)!important;box-shadow:0 0 18px rgba(196,30,58,0.9)!important}
         .tiny-marker img{display:none!important}
 
-        /* Popup สวย + ชี้ตรงจุด */
         .leaflet-popup-content-wrapper{
-            background:rgba(15,15,35,0.98)!important;
-            color:#fff!important;
-            border-radius:12px!important;
-            box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;
-            border:2px solid #c41e3a!important;
-            padding:0!important;
+            background:rgba(15,15,35,0.98)!important;color:#fff!important;border-radius:12px!important;
+            box-shadow:0 4px 20px rgba(196,30,58,0.5)!important;border:2px solid #c41e3a!important;padding:0!important
         }
-        .leaflet-popup-content{
-            margin:14px!important;
-            line-height:1.5;
-            font-size:0.95rem;
-        }
+        .leaflet-popup-content{margin:14px!important;line-height:1.5;font-size:0.95rem}
         .leaflet-popup-content b{font-size:1.15rem}
         .leaflet-popup-content a{color:#0ff;text-decoration:none}
-        .leaflet-popup-tip{background:#c41e3a!important;box-shadow:none!important}
-        .leaflet-popup-close-button{color:#fff!important;font-size:1.4rem!important;top:8px!important;right:10px!important}
+        .leaflet-popup-tip{background:#c41e3a!important}
     </style>
 </head>
 <body>
 
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-<div class="sidebar"><div id="list">กำลังโหลด...</div></div>
+<div class="sidebar">
+    <div class="stats-bar" id="stats">
+        กำลังโหลดจำนวนเคส...
+    </div>
+    <div class="filter-bar">
+        <div class="filter-btn active" data-filter="all">ทั้งหมด</div>
+        <div class="filter-btn" data-filter="pending">รอช่วยเหลือ</div>
+        <div class="filter-btn" data-filter="going">กำลังไป</div>
+        <div class="filter-btn" data-filter="acknowledged">รับทราบแล้ว</div>
+        <div class="filter-btn" data-filter="completed">เสร็จสิ้น</div>
+    </div>
+    <div id="list">กำลังโหลด...</div>
+</div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -69,7 +96,9 @@
     const markers = {};
     const cards = {};
     const list = document.getElementById('list');
+    const statsEl = document.getElementById('stats');
     const notified = new Set();
+    let currentFilter = 'all';
 
     const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
 
@@ -94,12 +123,45 @@
         return {icon:'ช่วย', text:type};
     }
 
+    function updateStats(counts) {
+        statsEl.innerHTML = `
+            ทั้งหมด <strong>${counts.all}</strong> เคส · 
+            <span class="counter pending">รอช่วยเหลือ ${counts.pending}</span> · 
+            <span class="counter going">กำลังไป ${counts.going}</span> · 
+            <span class="counter acknowledged">รับทราบแล้ว ${counts.acknowledged}</span> · 
+            <span class="counter completed">เสร็จสิ้น ${counts.completed}</span>
+        `;
+    }
+
+    function filterCases(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        document.querySelectorAll('.case').forEach(card => {
+            const status = card.dataset.status || 'pending';
+            card.style.display = (filter === 'all' || status === filter) ? 'block' : 'none';
+        });
+        Object.keys(markers).forEach(id => {
+            const m = markers[id];
+            const status = m.options.status || 'pending';
+            if (filter === 'all' || status === filter) {
+                if (!map.hasLayer(m)) m.addTo(map);
+            } else {
+                if (map.hasLayer(m)) map.removeLayer(m);
+            }
+        });
+    }
+
     function highlight(id) {
         document.querySelectorAll('.case').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tiny-marker').forEach(m => m.classList.remove('active'));
-        cards[id]?.classList.add('active');
-        markers[id]?._icon?.classList.add('active');
-        cards[id]?.scrollIntoView({behavior:'smooth', block:'nearest'});
+        const card = cards[id];
+        if (card) {
+            card.classList.add('active');
+            markers[id]?._icon?.classList.add('active');
+            card.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }
     }
 
     async function load() {
@@ -109,21 +171,28 @@
             data = await res.json() || {};
         } catch(e) {
             list.innerHTML = '<div style="text-align:center;padding:80px;color:#f66">เชื่อมต่อไม่ได้<br><button onclick="location.reload()" style="margin-top:20px;background:#c41e3a;padding:12px 30px;border:none;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer">รีเฟรชใหม่</button></div>';
+            statsEl.textContent = 'ไม่สามารถโหลดข้อมูลได้';
             return;
         }
 
         if (Object.keys(data).length === 0) {
             list.innerHTML = '<div style="text-align:center;padding:100px;color:#888">ยังไม่มีคำขอช่วยเหลือ</div>';
+            updateStats({all:0,pending:0,going:0,acknowledged:0,completed:0});
             return;
         }
 
-        list.innerHTML = '';
+        const counts = {all:0, pending:0, going:0, acknowledged:0, completed:0};
         const newIds = new Set();
+        const fragment = document.createDocumentFragment();
 
         Object.entries(data).forEach(([id, r]) => {
             if (!r.location?.lat || !r.location?.lng) return;
 
-            if ((r.status || 'pending') === 'pending' && !notified.has(id)) {
+            const status = r.status || 'pending';
+            counts.all++;
+            counts[status] = (counts[status] || 0) + 1;
+
+            if (status === 'pending' && !notified.has(id)) {
                 notified.add(id);
                 newIds.add(id);
                 new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3').play().catch(()=>{});
@@ -143,13 +212,14 @@
 
             const div = document.createElement('div');
             div.className = 'case';
+            div.dataset.status = status;
             div.innerHTML = `
                 <div class="pri">P${r.priority || '?'}</div>
                 <div class="name">${r.name || 'ไม่ระบุชื่อ'}</div>
                 ${r.phone ? `<div class="phone">โทร: ${r.phone}</div>` : ''}
                 <div class="details">${detailsHTML}</div>
                 <div class="time">${new Date(r.timestamp).toLocaleString('th-TH', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}</div>
-                <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${r.status||'pending'}')">เปลี่ยนสถานะ</button>
+                <button class="btn" onclick="event.stopPropagation();changeStatus('${id}', '${status}')">เปลี่ยนสถานะ</button>
             `;
 
             div.onclick = () => {
@@ -158,22 +228,25 @@
                 highlight(id);
             };
 
-            list.appendChild(div);
+            fragment.appendChild(div);
             cards[id] = div;
 
-            // Marker + Popup ชี้ตรงจุดเป๊ะ
             const icon = L.divIcon({
                 className: 'tiny-marker',
                 html: `<div style="--color:${color}"></div>`,
                 iconSize: [16,16],
                 iconAnchor: [8,8],
-                popupAnchor: [0, -10]  // สำคัญมาก! ทำให้ popup ชี้ตรงกลางจุด
+                popupAnchor: [0, -10]
             });
 
             if (!markers[id]) {
-                markers[id] = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map);
+                markers[id] = L.marker([r.location.lat, r.location.lng], {
+                    icon: icon,
+                    status: status
+                }).addTo(map);
             } else {
                 markers[id].setIcon(icon);
+                markers[id].options.status = status;
             }
 
             let popupDetails = r.types ? r.types.map(t => {
@@ -190,10 +263,7 @@
                     style="background:#c41e3a;color:#fff;border:none;padding:11px;width:100%;border-radius:9px;font-weight:bold">
                     นำทางด่วน
                 </button>
-            `, {
-                maxWidth: 300,
-                className: 'custom-popup'
-            });
+            `, {maxWidth: 300});
 
             markers[id].on('mouseover', () => highlight(id));
             markers[id].on('click', () => highlight(id));
@@ -203,8 +273,19 @@
                 setTimeout(() => markers[id].openPopup(), 600);
             }
         });
+
+        list.innerHTML = '';
+        list.appendChild(fragment);
+        updateStats(counts);
+        filterCases(currentFilter);
     }
 
+    // ปุ่มกรอง
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => filterCases(btn.dataset.filter));
+    });
+
+    // เปลี่ยนสถานะ
     function changeStatus(id, current) {
         const menu = document.createElement('div');
         menu.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:3px solid #c41e3a;border-radius:12px;z-index:99999;width:300px;text-align:center';
