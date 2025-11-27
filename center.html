@@ -3,41 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์บัญชาการ</title>
+    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
-
-        .header{position:absolute;top:0;left:0;right:0;height:68px;background:#111;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;padding:0 30px}
+        .header{position:fixed;top:0;left:0;right:0;height:68px;background:#111;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;padding:0 30px}
         .header h1{font-size:1.95rem;color:#c41e3a;font-weight:800}
-
-        .sidebar{position:absolute;top:68px;left:0;bottom:0;width:480px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);
+        .sidebar{position:fixed;top:68px;left:0;bottom:0;width:500px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);
             z-index:999;overflow-y:auto;padding:24px;border-right:4px solid #c41e3a}
         .item{
-            background:rgba(255,255,255,0.09);border-radius:16px;padding:22px;margin-bottom:18px;
-            cursor:pointer;position:relative;transition:0.3s;box-shadow:0 6px 22px rgba(0,0,0,0.6);
-            border-left:6px solid transparent;
+            background:rgba(255,255,255,0.09);border-radius:16px;padding:24px;margin-bottom:20px;
+            cursor:pointer;position:relative;transition:0.3s;box-shadow:0 8px 25px rgba(0,0,0,0.7);
+            border-left:8px solid transparent;
         }
-        .item:hover{transform:translateY(-8px);background:rgba(255,255,255,0.15)}
+        .item:hover{transform:translateY(-6px);background:rgba(255,255,255,0.16)}
         .item.pending{border-left-color:#e74c3c}
         .item.going{border-left-color:#2980b9}
         .item.acknowledged{border-left-color:#e67e22}
         .item.completed{border-left-color:#27ae60}
         .item.canceled{border-left-color:#95a5a6}
-
-        .status-dot{width:20px;height:20px;border-radius:50%;display:inline-block;margin-right:14px;border:4px solid #fff}
-        .pri-badge{position:absolute;top:16px;right:16px;background:#c41e3a;color:#fff;padding:8px 16px;border-radius:30px;font-size:1rem;font-weight:bold}
-
-        .icons{display:flex;gap:20px;margin:16px 0;font-size:1.9rem}
-        .icons i{color:#ff9500}
-
-        .deceased-tag{background:#000;color:#fff;padding:10px 16px;border-radius:12px;font-weight:bold;display:inline-block;margin:10px 0;font-size:1.1rem}
-
-        /* Marker กลมเล็ก 20px */
-        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.9)}70%{box-shadow:0 0 0 16px transparent}100%{box-shadow:0 0 0 0 transparent}}
+        .pri-badge{position:absolute;top:16px;right:16px;background:#c41e3a;color:#fff;padding:10px 20px;border-radius:30px;font-size:1.1rem;font-weight:bold}
+        .status-dot{width:22px;height:22px;border-radius:50%;display:inline-block;margin-right:12px;border:4px solid #fff}
+        .deceased{background:#000;color:#fff;padding:10px 18px;border-radius:12px;font-weight:bold;display:inline-block;margin:12px 0}
+        .text-line{margin:9px 0;font-size:1.1rem;line-height:1.6}
+        .cases-line{margin:12px 0;padding:12px;background:rgba(255,215,0,0.18);border-radius:10px;border-left:5px solid #ffd700}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.9)}70%{box-shadow:0 0 0 22px transparent}100%{box-shadow:0 0 0 0 transparent}}
         .dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,0.9)}
         .dot.new{animation:pulse 1.8s infinite}
     </style>
@@ -47,29 +39,30 @@
 <div class="header"><h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</h1></div>
 
 <div class="sidebar">
-    <h2 style="color:#c41e3a;text-align:center;margin-bottom:24px;font-size:1.7rem">รายการคำขอช่วยเหลือ</h2>
-    <div id="list">กำลังโหลด...</div>
+    <h2 style="color:#c41e3a;text-align:center;margin-bottom:24px;font-size:1.9rem">รายการคำขอความช่วยเหลือ</h2>
+    <div id="list">กำลังโหลดข้อมูล...</div>
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const map = L.map('map').setView([13.94678, 100.56125], 18);
+    const map = L.map('map').setView([13.94678, 100.56125], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const markers = {};
     const list = document.getElementById('list');
     const notified = new Set();
+    let hasZoomedInitially = false;
 
-    function hasDeceased(r) {
-        if (!r.types) return false;
-        const text = JSON.stringify(r.types).toLowerCase();
-        return text.includes('เสียชีวิต') || text.includes('ตาย') || text.includes('ศพ');
+    // ตรวจสอบว่ามีผู้เสียชีวิตไหม (จาก types)
+    function hasDeceased(types) {
+        if (!types || !Array.isArray(types)) return false;
+        return types.some(t => t.includes('เสียชีวิต') || t.includes('ตาย') || t.includes('ศพ'));
     }
 
     function getColor(r) {
-        if (hasDeceased(r)) return '#000000';
+        if (hasDeceased(r.types)) return '#000000';
         if (r.status === 'canceled') return '#7f8c8d';
         if (r.status === 'completed') return '#27ae60';
         if (r.status === 'going') return '#2980b9';
@@ -78,36 +71,55 @@
         return '#e74c3c';
     }
 
-    function getTypeIcons(types) {
-        if (!types) return '<i class="fas fa-exclamation-triangle" title="ไม่ระบุ"></i>';
-        let h = '';
-        if (types.includes('จมน้ำ') || types.includes('กำลังจมน้ำ')) h += '<i class="fas fa-water" title="จมน้ำ"></i>';
-        if (types.includes('อาหาร') || types.includes('น้ำ')) h += '<i class="fas fa-utensils" title="อาหาร/น้ำ"></i>';
-        if (types.includes('ติดอยู่')) h += '<i class="fas fa-home" title="ติดอยู่ในพื้นที่"></i>';
-        if (types.includes('ยา')) h += '<i class="fas fa-medkit" title="ยา"></i>';
-        if (hasDeceased({types})) h += '<i class="fas fa-cross" title="มีผู้เสียชีวิต" style="color:#fff;background:#000;padding:8px;border-radius:50%"></i>';
-        return h || '<i class="fas fa-exclamation-triangle"></i>';
+    // แปลง types เป็นข้อความอ่านง่าย
+    function getTypeText(types) {
+        if (!types || !Array.isArray(types) || types.length === 0) return 'ขอความช่วยเหลือทั่วไป';
+        const map = {
+            'อาหารและน้ำ': 'ต้องการอาหารและน้ำดื่ม',
+            'ติดอยู่ในพื้นที่': 'ติดอยู่ในบ้านหรือพื้นที่สูง',
+            'มีเด็ก': 'มีเด็กเล็ก',
+            'มีผู้สูงอายุ': 'มีผู้สูงอายุ',
+            'ยาและเวชภัณฑ์': 'ต้องการยาหรือเวชภัณฑ์',
+            'มีสัตว์เลี้ยง': 'มีสัตว์เลี้ยง',
+            'กำลังจมน้ำ': 'กำลังจมน้ำ (เร่งด่วนมาก!)',
+            'จมน้ำ': 'จมน้ำแล้ว',
+            'มีคนป่วย': 'มีผู้ป่วยหรือพิการ'
+        };
+        let result = [];
+        types.forEach(t => {
+            if (map[t]) result.push(map[t]);
+            else if (t.includes('เสียชีวิต') || t.includes('ตาย') || t.includes('ศพ')) result.push('มีผู้เสียชีวิต');
+            else result.push(t);
+        });
+        return result.join(' • ');
     }
 
-    // เมนูเปลี่ยนสถานะเมื่อกดการ์ด
+    // แสดงจำนวนคน (ยังไม่มีในข้อมูลนี้ แต่เผื่ออนาคต)
+    function getCasesText(cases) {
+        if (!cases) return '';
+        // รอเพิ่มในอนาคต
+        return '';
+    }
+
     function showStatusMenu(id, currentStatus, e) {
         e.stopPropagation();
         const menu = document.createElement('div');
-        menu.style.position = 'absolute';
+        menu.style.position = 'fixed';
         menu.style.background = '#111';
-        menu.style.border = '3px solid #c41e3a';
-        menu.style.borderRadius = '12px';
-        menu.style.padding = '12px';
+        menu.style.border = '4px solid #c41e3a';
+        menu.style.borderRadius = '16px';
+        menu.style.padding = '24px';
         menu.style.zIndex = '9999';
-        menu.style.boxShadow = '0 0 20px rgba(196,30,58,0.8)';
+        menu.style.boxShadow = '0 0 30px rgba(196,30,58,0.9)';
         menu.style.left = '50%';
         menu.style.top = '50%';
         menu.style.transform = 'translate(-50%,-50%)';
+        menu.style.minWidth = '340px';
         document.body.appendChild(menu);
 
         const options = [
             {status: 'going', label: 'กำลังเข้าช่วยเหลือ', color: '#2980b9'},
-            {status: 'acknowledged', label: 'รับทราบแล้ว', color: '#e67e22'},
+            {status: 'acknowledged', label: 'รับทราบคำขอแล้ว', color: '#e67e22'},
             {status: 'completed', label: 'ช่วยเหลือเสร็จสิ้น', color: '#27ae60'},
             {status: 'canceled', label: 'ยกเลิกคำขอ', color: '#95a5a6'}
         ];
@@ -118,12 +130,13 @@
             btn.textContent = opt.label;
             btn.style.background = opt.color;
             btn.style.color = '#fff';
-            btn.style.padding = '14px 20px';
-            btn.style.margin = '6px 0';
-            btn.style.borderRadius = '10px';
+            btn.style.padding = '18px 20px';
+            btn.style.margin = '10px 0';
+            btn.style.borderRadius = '12px';
             btn.style.textAlign = 'center';
             btn.style.cursor = 'pointer';
             btn.style.fontWeight = 'bold';
+            btn.style.fontSize = '1.2rem';
             btn.onclick = () => {
                 up(id, opt.status);
                 document.body.removeChild(menu);
@@ -132,17 +145,16 @@
         });
 
         const close = document.createElement('div');
-        close.textContent = '✖ ปิด';
-        close.style.background = '#333';
-        close.style.padding = '10px';
+        close.textContent = 'ปิด';
+        close.style.background = '#444';
+        close.style.padding = '14px';
         close.style.textAlign = 'center';
-        close.style.marginTop = '10px';
-        close.style.borderRadius = '10px';
+        close.style.marginTop = '16px';
+        close.style.borderRadius = '12px';
         close.style.cursor = 'pointer';
         close.onclick = () => document.body.removeChild(menu);
         menu.appendChild(close);
 
-        // คลิกนอกเมนูก็ปิด
         setTimeout(() => {
             document.addEventListener('click', function handler() {
                 if (menu && document.body.contains(menu)) document.body.removeChild(menu);
@@ -157,45 +169,53 @@
             const r = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json');
             const live = await r.json();
             if (live) data = live;
-        } catch(e) {}
+        } catch(e) { console.error(e); }
 
         list.innerHTML = '';
-        Object.values(markers).forEach(m => map.removeLayer(m));
+        const newPendingIds = new Set();
 
         Object.entries(data).forEach(([id, r]) => {
-            if (!r.location?.lat) return;
+            if (!r.location?.lat || !r.location?.lng) return;
 
+            // แจ้งเตือนเมื่อมีคำขอใหม่
             if (r.status === 'pending' && !notified.has(id)) {
                 notified.add(id);
+                newPendingIds.add(id);
                 new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
             }
 
             const color = getColor(r);
-            const isNew = !notified.has(id) && r.status === 'pending';
-            const deceased = hasDeceased(r);
+            const isNew = newPendingIds.has(id);
+            const deceased = hasDeceased(r.types);
 
             const div = document.createElement('div');
-            div.className = `item ${r.status||'pending'}`;
+            div.className = `item ${r.status || 'pending'}`;
             div.innerHTML = `
-                <div class="pri-badge">P${r.priority||'?'}</div>
-                <strong><span class="status-dot" style="background:${color}"></span> ${r.name || 'ไม่ระบุชื่อ'}</strong><br>
-                ${r.phone ? `<small style="color:#8ff">โทร: ${r.phone}</small><br>` : ''}
-                <div class="icons">${getTypeIcons(r.types)}</div>
-                ${deceased ? '<div class="deceased-tag">มีผู้เสียชีวิต</div>' : ''}
-                <div style="margin-top:12px;color:#aaa;font-size:0.9rem">
-                    แตะที่นี่เพื่อเปลี่ยนสถานะ →
+                <div class="pri-badge">ความสำคัญ P${r.priority || '?'}</div>
+                <strong><span class="status-dot" style="background:${color}"></span> ${r.name || 'ไม่ระบุชื่อ'}</strong>
+                ${r.phone ? `<div class="text-line">โทร: <span style="color:#0ff;font-weight:bold">${r.phone}</span></div>` : ''}
+                <div class="text-line"><strong>ต้องการความช่วยเหลือ:</strong><br>
+                    <span style="color:#ffdd00;font-size:1.05rem">${getTypeText(r.types)}</span>
+                </div>
+                ${deceased ? '<div class="deceased">มีผู้เสียชีวิต</div>' : ''}
+                <div style="margin-top:16px;padding-top:12px;border-top:1px dashed #555;color:#bbb;font-size:0.95rem">
+                    แตะเพื่อดูตำแหน่งและเปลี่ยนสถานะ →
                 </div>
             `;
 
-            // กดทั้งการ์ด → เปิดเมนูเปลี่ยนสถานะ
             div.onclick = (e) => {
                 e.stopPropagation();
-                showStatusMenu(id, r.status || 'pending', e);
+                const marker = markers[id];
+                if (marker) {
+                    map.setView(marker.getLatLng(), 18);
+                    marker.openPopup();
+                }
+                setTimeout(() => showStatusMenu(id, r.status || 'pending', e), 500);
             };
 
             list.appendChild(div);
 
-            // Marker
+            // สร้าง Marker
             const icon = L.divIcon({
                 className: "",
                 html: `<div class="dot${isNew?' new':''}" style="background:${color};"></div>`,
@@ -203,33 +223,70 @@
                 iconAnchor: [10,10]
             });
 
-            const m = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map)
-                .bindPopup(`<div style="font-family:Sarabun;padding:12px">
-                    <div style="background:${color};color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:12px">
-                        ${deceased?'มีผู้เสียชีวิต':r.priority>=5?'เร่งด่วนสูงสุด':'SOS ปกติ'} • P${r.priority}
-                    </div>
-                    <b style="font-size:1.9rem">${r.name || 'ไม่ระบุชื่อ'}</b><br>
-                    ${r.phone ? `โทร: <a href="tel:${r.phone}" style="color:#0f0;font-weight:bold">${r.phone}</a><br>` : ''}
-                    <div style="margin:16px 0;font-size:2rem">${getTypeIcons(r.types)}</div>
-                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
-                            style="background:#c41e3a;color:#fff;padding:16px;width:100%;border:none;border-radius:12px;font-weight:bold;font-size:1.2rem">
-                            นำทางด่วน
-                    </button>
-                </div>`, {maxWidth: 360});
+            let marker;
+            if (markers[id]) {
+                marker = markers[id];
+                marker.setLatLng([r.location.lat, r.location.lng]);
+                marker.setIcon(icon);
+            } else {
+                marker = L.marker([r.location.lat, r.location.lng], {icon}).addTo(map);
+                markers[id] = marker;
+            }
 
-            markers[id] = m;
+            marker.bindPopup(`
+                <div style="font-family:Sarabun;padding:16px;min-width:320px">
+                    <div style="background:${color};color:#fff;padding:14px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:14px;font-size:1.3rem">
+                        ${deceased ? 'มีผู้เสียชีวิต' : r.priority >= 5 ? 'เร่งด่วนสูงสุด' : 'ขอความช่วยเหลือ'} • P${r.priority || '?'}
+                    </div>
+                    <b style="font-size:2rem">${r.name || 'ไม่ระบุชื่อ'}</b><br>
+                    ${r.phone ? `<div style="margin:10px 0">โทร: <a href="tel:${r.phone}" style="color:#0f0;font-weight:bold;font-size:1.5rem">${r.phone}</a></div>` : ''}
+                    <div style="margin:16px 0;line-height:1.8;background:rgba(255,255,255,0.1);padding:14px;border-radius:10px;color:#ffdd00">
+                        ${getTypeText(r.types)}
+                    </div>
+                    ${deceased ? '<div style="background:#000;color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:bold;margin:12px 0;font-size:1.2rem">มีผู้เสียชีวิต</div>' : ''}
+                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
+                            style="margin-top:16px;background:#c41e3a;color:#fff;padding:18px;width:100%;border:none;border-radius:12px;font-weight:bold;font-size:1.4rem">
+                        นำทางไปยังจุดนี้ทันที
+                    </button>
+                </div>
+            `, {maxWidth: 400});
+
+            // ถ้ามีคำขอใหม่ → ซูมไปหาจุดนั้นทันที
+            if (isNew) {
+                map.setView([r.location.lat, r.location.lng], 18);
+                setTimeout(() => marker.openPopup(), 700);
+            }
         });
 
-        if (Object.keys(markers).length > 0) {
-            map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.6));
+        // ลบ marker ที่หายไป
+        Object.keys(markers).forEach(id => {
+            if (!data[id]) {
+                map.removeLayer(markers[id]);
+                delete markers[id];
+            }
+        });
+
+        // ครั้งแรกที่โหลด → ขยายให้เห็นทุกจุด
+        if (!hasZoomedInitially && Object.keys(markers).length > 0) {
+            hasZoomedInitially = true;
+            setTimeout(() => {
+                map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.6));
+            }, 800);
         }
     }
 
     async function up(id, status) {
-        if (!confirm('ยืนยันเปลี่ยนสถานะเป็น "' + 
-            (status==='going'?'กำลังเข้าช่วยเหลือ':status==='acknowledged'?'รับทราบแล้ว':status==='completed'?'ช่วยเหลือแล้ว':'ยกเลิก') + '" ?')) return;
+        const labels = {
+            going: 'กำลังเข้าช่วยเหลือ',
+            acknowledged: 'รับทราบคำขอแล้ว',
+            completed: 'ช่วยเหลือเสร็จสิ้น',
+            canceled: 'ยกเลิกคำขอ'
+        };
+        if (!confirm(`ยืนยันเปลี่ยนสถานะเป็น\n"${labels[status]}" ?`)) return;
+
         await fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {
-            method: 'PUT', body: JSON.stringify(status)
+            method: 'PUT',
+            body: JSON.stringify(status)
         });
         load();
     }
@@ -240,5 +297,3 @@
 </script>
 </body>
 </html>
-
-
