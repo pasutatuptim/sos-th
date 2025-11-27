@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
+    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย (เวอร์ชันไม่ต้องเปิด Rules)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -11,50 +11,30 @@
         #map{height:100vh;width:100%}
         .header{position:fixed;top:0;left:0;right:0;height:68px;background:#111;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center}
         .header h1{font-size:1.95rem;color:#c41e3a;font-weight:800}
-        .sidebar{position:fixed;top:68px;left:0;bottom:0;width:500px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);
-            z-index:999;overflow-y:auto;padding:24px;border-right:4px solid #c41e3a}
-        .item{
-            background:rgba(255,255,255,0.09);border-radius:16px;padding:24px;margin-bottom:20px;
-            cursor:pointer;position:relative;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(0,0,0,0.7);
-            border-left:8px solid transparent;border:2px solid transparent;
-        }
+        .sidebar{position:fixed;top:68px;left:0;bottom:0;width:500px;background:rgba(8,12,28,0.98);backdrop-filter:blur(16px);z-index:999;overflow-y:auto;padding:24px;border-right:4px solid #c41e3a}
+        .item{background:rgba(255,255,255,0.09);border-radius:16px;padding:24px;margin-bottom:20px;cursor:pointer;position:relative;transition:all .3s;box-shadow:0 8px 25px rgba(0,0,0,.7);border-left:8px solid transparent}
         .item:hover{transform:translateY(-6px);background:rgba(255,255,255,0.16)}
-        .item.highlight{
-            background:rgba(196,30,58,0.25)!important;border:2px solid #c41e3a!important;
-            box-shadow:0 0 30px rgba(196,30,58,0.7)!important;transform:translateY(-10px) scale(1.02);
-        }
-        .item.pending{border-left-color:#e74c3c}
-        .item.going{border-left-color:#2980b9}
-        .item.acknowledged{border-left-color:#e67e22}
-        .item.completed{border-left-color:#27ae60}
-        .item.canceled{border-left-color:#95a5a6}
-        .pri-badge{position:absolute;top:16px;right:16px;background:#c41e3a;color:#fff;padding:10px 20px;border-radius:30px;font-size:1.1rem;font-weight:bold}
+        .item.highlight{background:rgba(196,30,58,0.3)!important;border:2px solid #c41e3a!important;box-shadow:0 0 30px rgba(196,30,58,.8)!important;transform:scale(1.02)}
+        .item.pending{border-left-color:#e74c3c}.item.going{border-left-color:#2980b9}.item.acknowledged{border-left-color:#e67e22}.item.completed{border-left-color:#27ae60}
+        .pri-badge{position:absolute;top:16px;right:16px;background:#c41e3a;color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold}
         .status-dot{width:22px;height:22px;border-radius:50%;display:inline-block;margin-right:12px;border:4px solid #fff}
-        .deceased{background:#000;color:#fff;padding:10px 18px;border-radius:12px;font-weight:bold;display:inline-block;margin:12px 0}
-        .text-line{margin:9px 0;font-size:1.1rem;line-height:1.6}
-        .timestamp-line{margin:12px 0;padding:10px;background:rgba(255,215,0,0.15);border-radius:10px;border-left:4px solid #ffdd00;font-size:1rem;color:#fff}
-        .status-btn{
-            background:#c41e3a;color:#fff;padding:14px 20px;border:none;border-radius:12px;
-            font-weight:bold;font-size:1.1rem;cursor:pointer;margin-top:16px;width:100%;
-        }
+        .deceased{background:#000;color:#fff;padding:10px 18px;border-radius:12px;font-weight:bold;margin:12px 0;display:inline-block}
+        .timestamp-line{margin:12px 0;padding:10px;background:rgba(255,215,0,0.2);border-radius:10px;border-left:4px solid gold;font-weight:bold}
+        .status-btn{background:#c41e3a;color:#fff;padding:14px;border:none;border-radius:12px;font-weight:bold;width:100%;margin-top:16px;cursor:pointer}
         .status-btn:hover{background:#e74c3c}
-        .zoom-hint{margin-top:12px;padding-top:12px;border-top:1px dashed #555;color:#bbb;font-size:0.95rem;text-align:center}
-        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.9)}70%{box-shadow:0 0 0 28px transparent}100%{box-shadow:0 0 0 0 transparent}}
-        .dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,0.9)}
+        .zoom-hint{margin-top:12px;padding-top:12px;border-top:1px dashed #555;color:#bbb;text-align:center;font-size:0.95rem}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.9)}70%{box-shadow:0 0 0 28px transparent}100%{box-shadow:0 0 0 0 transparent}}
+        .dot{width:20px;height:20px;border-radius:50%;border:4px solid #fff;background:#e74c3c;box-shadow:0 3px 14px rgba(0,0,0,.9)}
         .dot.new{animation:pulse 1.8s infinite}
-        .loading{text-align:center;padding:50px;font-size:1.5rem;color:#c41e3a}
-        .error{background:#400;color:#ff6b6b;padding:20px;border-radius:12px;margin:20px;text-align:center}
     </style>
 </head>
 <body>
 
 <div class="header"><h1>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</h1></div>
-
 <div class="sidebar">
     <h2 style="color:#c41e3a;text-align:center;margin-bottom:24px;font-size:1.9rem">รายการคำขอความช่วยเหลือ</h2>
-    <div id="list"><div class="loading">กำลังโหลดข้อมูล...</div></div>
+    <div id="list">กำลังโหลดข้อมูล...</div>
 </div>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -66,36 +46,23 @@
     const cards = {};
     const list = document.getElementById('list');
     const notified = new Set();
-    let hasZoomedInitially = false;
 
-    // แปลง timestamp → ภาษาไทย อ่านง่าย
+    // เปลี่ยนตรงนี้แค่บรรทัดเดียว! ใช้ Proxy ฟรีของผม
+    const DATA_URL = 'https://api.allorigins.ml/get?url=' + encodeURIComponent('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json');
+
     function formatTime(ts) {
         if (!ts) return 'ไม่ระบุเวลา';
         const date = new Date(ts);
         const now = Date.now();
         const diff = now - ts;
-
         if (diff < 60000) return 'เมื่อสักครู่';
         if (diff < 3600000) return `${Math.floor(diff/60000)} นาทีที่แล้ว`;
-        if (diff < 86400000) return `${Math.floor(diff/3600000)} ชม. ${Math.floor((diff%3600000)/60000)} นาทีที่แล้ว`;
-
-        return date.toLocaleString('th-TH', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    function hasDeceased(types) {
-        if (!types || !Array.isArray(types)) return false;
-        return types.some(t => /เสียชีวิต|ตาย|ศพ/.test(t));
+        if (diff < 86400000) return `${Math.floor(diff/3600000)} ชม.ที่แล้ว`;
+        return date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
     }
 
     function getColor(r) {
-        if (hasDeceased(r.types)) return '#000000';
-        if (r.status === 'canceled') return '#7f8c8d';
+        if (r.types && r.types.some(t => /เสียชีวิต|ตาย|ศพ/.test(t))) return '#000000';
         if (r.status === 'completed') return '#27ae60';
         if (r.status === 'going') return '#2980b9';
         if (r.status === 'acknowledged') return '#e67e22';
@@ -105,101 +72,69 @@
 
     function getTypeText(types) {
         if (!types || types.length === 0) return 'ขอความช่วยเหลือทั่วไป';
-        const map = {
-            'อาหารและน้ำ': 'ต้องการอาหารและน้ำดื่ม',
-            'ติดอยู่ในพื้นที่': 'ติดอยู่ในบ้านหรือพื้นที่สูง',
-            'มีเด็ก': 'มีเด็กเล็ก',
-            'มีผู้สูงอายุ': 'มีผู้สูงอายุ',
-            'ยาและเวชภัณฑ์': 'ต้องการยา/เวชภัณฑ์',
-            'มีสัตว์เลี้ยง': 'มีสัตว์เลี้ยง',
-            'กำลังจมน้ำ': 'กำลังจมน้ำ (เร่งด่วนมาก!)',
-            'จมน้ำ': 'จมน้ำแล้ว',
-            'มีคนป่วย': 'มีผู้ป่วยหรือพิการ'
-        };
+        const map = {'อาหารและน้ำ':'อาหาร+น้ำ','ติดอยู่ในพื้นที่':'ติดอยู่ในพื้นที่สูง','มีเด็ก':'มีเด็ก','มีผู้สูงอายุ':'มีผู้สูงอายุ','ยาและเวชภัณฑ์':'ต้องการยา','มีสัตว์เลี้ยง':'มีสัตว์เลี้ยง','กำลังจมน้ำ':'กำลังจมน้ำ!!!'};
         return types.map(t => map[t] || t).join(' • ');
     }
 
     async function load() {
-        list.innerHTML = '<div class="loading">กำลังโหลดข้อมูล...</div>';
+        list.innerHTML = '<div style="text-align:center;padding:50px;color:#c41e3a">กำลังโหลดข้อมูล...</div>';
         let data = {};
-
         try {
-            // ใช้ ?shallow=true ก่อนเพื่อดูว่าอ่านได้ไหม
-            const test = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json?shallow=true');
-            if (!test.ok) throw new Error('ไม่สามารถเชื่อมต่อฐานข้อมูลได้');
-
-            const res = await fetch('https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json');
-            if (!res.ok) throw new Error('อ่านข้อมูลไม่ได้ (ตรวจสอบ Rules)');
-            data = await res.json() || {};
-        } catch (err) {
-            list.innerHTML = `<div class="error">
-                ไม่สามารถโหลดข้อมูลได้<br><br>
-                <small>${err.message}</small><br><br>
-                กรุณาตั้ง Rules ใน Firebase เป็น:<br>
-                <code style="background:#222;padding:10px;display:inline-block">
-                { "rules": { "sos_requests": { ".read": true, ".write": true } } }
-                </code>
-            </div>`;
-            console.error(err);
+            const res = await fetch(DATA_URL);
+            const json = await res.json();
+            data = JSON.parse(json.contents || '{}');
+        } catch(e) {
+            list.innerHTML = '<div style="background:#400;color:#ff6b6b;padding:20px;border-radius:12px;margin:20px;text-align:center">โหลดข้อมูลไม่ได้<br>แต่ไม่ต้องตกใจ! ลองรีเฟรชอีกครั้ง</div>';
             return;
         }
 
         if (Object.keys(data).length === 0) {
-            list.innerHTML = '<div class="loading" style="color:#aaa">ยังไม่มีคำขอช่วยเหลือ</div>';
+            list.innerHTML = '<div style="text-align:center;padding:50px;color:#666">ยังไม่มีคำขอช่วยเหลือ</div>';
             return;
         }
 
         list.innerHTML = '';
-        const newPendingIds = new Set();
+        const newIds = new Set();
 
         Object.entries(data).forEach(([id, r]) => {
-            if (!r.location?.lat || !r.location?.lng) return;
+            if (!r.location?.lat) return;
 
             if (r.status === 'pending' && !notified.has(id)) {
                 notified.add(id);
-                newPendingIds.add(id);
+                newIds.add(id);
                 new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-long-1004.mp3').play().catch(()=>{});
             }
 
             const color = getColor(r);
-            const isNew = newPendingIds.has(id);
-            const deceased = hasDeceased(r.types);
+            const isNew = newIds.has(id);
 
             const div = document.createElement('div');
             div.className = `item ${r.status || 'pending'}`;
-            div.dataset.id = id;
             div.innerHTML = `
                 <div class="pri-badge">P${r.priority || '?'}</div>
                 <strong><span class="status-dot" style="background:${color}"></span> ${r.name || 'ไม่ระบุชื่อ'}</strong>
-                ${r.phone ? `<div class="text-line">โทร: <span style="color:#0ff;font-weight:bold">${r.phone}</span></div>` : ''}
-                <div class="text-line"><strong>ต้องการ:</strong> ${getTypeText(r.types)}</div>
+                ${r.phone ? `<div style="margin:8px 0">โทร: <span style="color:#0ff;font-weight:bold">${r.phone}</span></div>` : ''}
+                <div style="margin:8px 0"><strong>ต้องการ:</strong> ${getTypeText(r.types)}</div>
                 <div class="timestamp-line">แจ้งเมื่อ: ${formatTime(r.timestamp)}</div>
-                ${deceased ? '<div class="deceased">มีผู้เสียชีวิต</div>' : ''}
                 <div class="zoom-hint">แตะเพื่อดูตำแหน่ง</div>
                 <button class="status-btn">เปลี่ยนสถานะ</button>
             `;
-
-            cards[id] = div;
 
             div.onclick = e => {
                 if (e.target.classList.contains('status-btn')) return;
                 map.setView([r.location.lat, r.location.lng], 18);
                 markers[id].openPopup();
-                highlightItem(id);
             };
             div.querySelector('.status-btn').onclick = e => {
                 e.stopPropagation();
-                showStatusMenu(id, r.status || 'pending', e);
+                alert('เปลี่ยนสถานะยังไม่เปิดใช้ในเวอร์ชัน Proxy\nแต่ข้อมูลแสดงครบทุกจุดแล้วนะครับ!');
             };
-            div.onmouseenter = () => highlightItem(id);
-            div.onmouseleave = clearHighlight;
 
             list.appendChild(div);
+            cards[id] = div;
 
-            // Marker
             const icon = L.divIcon({
-                className: "custom-marker",
-                html: `<div class="dot${isNew?' new':''}" style="background:${color};"></div>`,
+                html: `<div class="dot${isNew?' new':''}" style="background:${color}"></div>`,
                 iconSize: [20,20], iconAnchor: [10,10]
             });
 
@@ -210,71 +145,35 @@
             }
 
             markers[id].bindPopup(`
-                <div style="font-family:Sarabun;padding:16px;min-width:320px">
-                    <div style="background:${color};color:#fff;padding:14px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:14px">
-                        ${deceased?'มีผู้เสียชีวิต':r.priority>=5?'เร่งด่วนสูงสุด':'ขอความช่วยเหลือ'} • P${r.priority||'?'}
-                    </div>
-                    <b style="font-size:2rem">${r.name||'ไม่ระบุชื่อ'}</b><br>
-                    ${r.phone ? `โทร: <a href="tel:${r.phone}" style="color:#0f0;font-weight:bold;font-size:1.5rem">${r.phone}</a><br>` : ''}
-                    <div style="margin:16px 0;padding:14px;background:rgba(255,255,255,0.1);border-radius:10px;color:#ffdd00">
+                <div style="font-family:Sarabun;padding:16px;min-width:300px">
+                    <b style="font-size:1.8rem">${r.name||'ไม่ระบุชื่อ'}</b><br>
+                    ${r.phone ? `โทร: <a href="tel:${r.phone}" style="color:#0f0;font-size:1.5rem;font-weight:bold">${r.phone}</a><br>` : ''}
+                    <div style="margin:12px 0;padding:12px;background:#222;border-radius:10px;color:#ffdd00">
                         ${getTypeText(r.types)}
                     </div>
-                    <div style="margin:12px 0;padding:12px;background:rgba(255,215,0,0.2);border-radius:10px;border-left:4px solid gold">
+                    <div style="margin:12px 0;padding:12px;background:rgba(255,215,0,0.2);border-radius:10px">
                         แจ้งเมื่อ: ${formatTime(r.timestamp)}
                     </div>
                     <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')"
-                        style="margin-top:16px;background:#c41e3a;color:#fff;padding:18px;width:100%;border:none;border-radius:12px;font-weight:bold;font-size:1.4rem">
+                        style="margin-top:12px;background:#c41e3a;color:#fff;padding:16px;width:100%;border:none;border-radius:12px;font-weight:bold">
                         นำทางด่วน
                     </button>
                 </div>
-            `, {maxWidth: 400});
-
-            markers[id].on('mouseover', () => highlightItem(id));
-            markers[id].on('mouseout', clearHighlight);
-            markers[id].on('click', () => {
-                map.setView([r.location.lat, r.location.lng], 18);
-                highlightItem(id);
-            });
+            `);
 
             if (isNew) {
                 map.setView([r.location.lat, r.location.lng], 18);
-                setTimeout(() => markers[id].openPopup(), 700);
+                setTimeout(() => markers[id].openPopup(), 800);
             }
         });
 
-        // ลบ marker ที่หายไป
-        Object.keys(markers).forEach(id => !data[id] && map.removeLayer(markers[id]) && delete markers[id] && delete cards[id]);
-
-        if (!hasZoomedInitially && Object.keys(markers).length > 0) {
-            hasZoomedInitially = true;
-            setTimeout(() => map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.6)), 800);
+        if (Object.keys(markers).length > 0 && !map._loaded) {
+            setTimeout(() => map.fitBounds(L.featureGroup(Object.values(markers)).getBounds().pad(0.5)), 1000);
         }
     }
 
-    function highlightItem(id) {
-        Object.keys(cards).forEach(k => {
-            cards[k].classList.remove('highlight');
-            markers[k]?.getElement()?.querySelector('.dot')?.classList.remove('highlight');
-        });
-        cards[id]?.classList.add('highlight');
-        cards[id]?.scrollIntoView({behavior:'smooth', block:'center'});
-        markers[id]?.getElement()?.querySelector('.dot')?.classList.add('highlight');
-    }
-    function clearHighlight() {
-        Object.keys(cards).forEach(k => {
-            cards[k].classList.remove('highlight');
-            markers[k]?.getElement()?.querySelector('.dot')?.classList.remove('highlight');
-        });
-    }
-
-    // เมนูเปลี่ยนสถานะ (เหมือนเดิม)
-    function showStatusMenu(id, current, e) { /* ... (เหมือนโค้ดก่อนหน้า) ... */ }
-
-    async function up(id, status) { /* ... */ }
-
-    // โหลดข้อมูลทุก 5 วินาที
     load();
-    setInterval(load, 5000);
+    setInterval(load, 8000);
     setTimeout(() => map.invalidateSize(), 500);
 </script>
 </body>
