@@ -67,37 +67,36 @@
     // --- CONFIGURATION SETUP: ใช้ Realtime Database URL ที่กำหนด ---
     
     const PROJECT_ID = "pasuta-sos";
-    // *** แก้ไข: กำหนด databaseURL เป็น Root URL เท่านั้น เพื่อไม่ให้เกิดข้อผิดพลาดในการ Initialize ***
+    // กำหนด databaseURL เป็น Root URL เท่านั้น เพื่อให้ getDatabase() ทำงานได้
     const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`; 
-
-    // Mock config สำหรับการรันนอก Canvas (แก้ไข apiKey เพื่อหลีกเลี่ยงข้อผิดพลาด)
-    const MOCK_PROJECT_ID = PROJECT_ID;
-    const MOCK_FIREBASE_CONFIG = {
-        apiKey: "", // ลบ API Key จำลองเพื่อแก้ไข Error: auth/api-key-not-valid
-        authDomain: `${MOCK_PROJECT_ID}.firebaseapp.com`,
-        projectId: MOCK_PROJECT_ID,
-        databaseURL: DB_URL, // สำคัญ: ต้องเป็น Root URL
-        storageBucket: `${MOCK_PROJECT_ID}.appspot.com`,
-        messagingSenderId: "1234567890",
-        appId: "1:1234567890:web:mockedapp"
-    };
     
     // ดึงค่า Global Variables (จาก Canvas Environment)
-    const appId = typeof __app_id !== 'undefined' ? __app_id : MOCK_PROJECT_ID;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : PROJECT_ID; // ใช้ PROJECT_ID เป็นค่าสำรอง
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
     let firebaseConfig;
     try {
         firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : 'null');
+        
+        // หาก config ไม่ถูกส่งมาหรือไม่มี projectId ให้สร้าง config ขั้นต่ำ
         if (!firebaseConfig || !firebaseConfig.projectId) {
-            firebaseConfig = MOCK_FIREBASE_CONFIG;
+            firebaseConfig = {
+                projectId: PROJECT_ID,
+                databaseURL: DB_URL,
+                apiKey: "", 
+            };
         }
-        // ตรวจสอบและเพิ่ม databaseURL ใน config หากยังไม่มี
-        if (!firebaseConfig.databaseURL) {
-            firebaseConfig.databaseURL = DB_URL;
-        }
+        
+        // ตรวจสอบและกำหนด databaseURL ให้ถูกต้องเสมอ (Root URL)
+        firebaseConfig.databaseURL = DB_URL;
+        
     } catch (e) {
-        firebaseConfig = MOCK_FIREBASE_CONFIG;
+        // Fallback สำหรับข้อผิดพลาดในการ Parse JSON
+        firebaseConfig = {
+            projectId: PROJECT_ID,
+            databaseURL: DB_URL,
+            apiKey: "", 
+        };
     }
     // ----------------------------------------------------
 
@@ -151,7 +150,6 @@
      */
     function getTeamRef() {
         if (!userId) throw new Error("User ID is not set.");
-        // *** แก้ไข: เนื่องจาก DB_URL ถูกตั้งค่าเป็น Root แล้ว, ต้องใส่ child path 'rescue_teams' กลับมาที่นี่ ***
         // RTDB Path: /rescue_teams/{userId}
         const path = `rescue_teams/${userId}`; 
         return ref(db, path);
