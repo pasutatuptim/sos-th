@@ -14,23 +14,24 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
-<div id="appContainer" class="w-full max-w-lg bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-amber-500">
-    <h1 class="text-3xl font-bold text-center text-amber-500 mb-6">
-        รายงานสถานะทีมกู้ภัย
+<div id="appContainer" class="w-full max-w-lg bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-yellow-500">
+    <h1 class="text-3xl font-bold text-center text-yellow-400 mb-6">
+        ระบบลงทะเบียนและรายงานสถานะ
     </h1>
-    <p id="userIdDisplay" class="text-sm text-center text-gray-400 mb-4">
+    <p id="userIdDisplay" class="text-sm text-center text-gray-400 mb-4 truncate">
         รหัสผู้ใช้งาน: กำลังเชื่อมต่อ...
     </p>
 
     <div class="space-y-4">
+        <!-- Input fields with amber focus style -->
         <input type="text" id="teamName" placeholder="ชื่อทีม / ชื่อหน่วย (เช่น ทีมเรือเร็ว 1)" required
-               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg">
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg">
         
         <input type="tel" id="phone" placeholder="เบอร์โทรติดต่อ (สำหรับศูนย์ฯ)"
-               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg">
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg">
         
         <select id="vehicle" 
-                class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg appearance-none">
+                class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg appearance-none">
             <option value="รถยนต์">รถยนต์กู้ภัย</option>
             <option value="เรือ">เรือช่วยเหลือ</option>
             <option value="รถพยาบาล">รถพยาบาล</option>
@@ -39,9 +40,10 @@
             <option value="อากาศยาน">อากาศยาน / โดรน</option>
         </select>
         
+        <!-- Main action button with amber/yellow color -->
         <button id="startButton" onclick="startReporting()" disabled
                 class="w-full py-3 mt-4 text-xl font-bold rounded-lg transition duration-300 shadow-lg 
-                       bg-amber-600 hover:bg-amber-500 text-gray-900 disabled:bg-gray-600 disabled:text-gray-400">
+                       bg-yellow-600 hover:bg-yellow-500 text-gray-900 disabled:bg-gray-600 disabled:text-gray-400">
             เริ่มส่งตำแหน่งเรียลไทม์
         </button>
     </div>
@@ -61,13 +63,32 @@
     import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // ตั้งค่า Log Level สำหรับ Firestore
-    setLogLevel('debug'); 
-
-    // ตัวแปรส่วนกลางจาก Canvas Environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    // --- CONFIGURATION SETUP (จัดการกับปัญหา projectId หากรันนอก Canvas) ---
+    const MOCK_PROJECT_ID = "pasuta-sos-mock-2025";
+    const MOCK_FIREBASE_CONFIG = {
+        apiKey: "AIzaSy_MockAPIKey_12345",
+        authDomain: `${MOCK_PROJECT_ID}.firebaseapp.com`,
+        projectId: MOCK_PROJECT_ID,
+        storageBucket: `${MOCK_PROJECT_ID}.appspot.com`,
+        messagingSenderId: "1234567890",
+        appId: "1:1234567890:web:mockedapp"
+    };
+    
+    // ดึงค่า Global Variables
+    const appId = typeof __app_id !== 'undefined' ? __app_id : MOCK_PROJECT_ID;
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let firebaseConfig;
+    try {
+        firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : 'null');
+        if (!firebaseConfig || !firebaseConfig.projectId) {
+            // ใช้ Mock config หากไม่มี config ที่ถูกต้อง
+            firebaseConfig = MOCK_FIREBASE_CONFIG;
+        }
+    } catch (e) {
+        firebaseConfig = MOCK_FIREBASE_CONFIG;
+    }
+    // ----------------------------------------------------
 
     // ตัวแปร Firebase Services
     let db, auth, userId = null;
@@ -87,7 +108,7 @@
     // ----------------------------------------------------
 
     /**
-     * แสดงข้อความสถานะบน UI
+     * แสดงข้อความสถานะบน UI และใช้โทนสีส้มเหลือง (ยกเว้น error)
      * @param {string} message - ข้อความที่ต้องการแสดง
      * @param {'success'|'error'|'waiting'|'info'} type - ประเภทสถานะ
      */
@@ -97,13 +118,13 @@
 
         switch (type) {
             case 'success':
-                colorClass = "bg-green-600 text-white";
+                colorClass = "bg-yellow-500 text-gray-900"; // ส้มเหลืองสำหรับ Success
                 break;
             case 'error':
-                colorClass = "bg-red-600 text-white";
+                colorClass = "bg-red-700 text-white"; // แดงเข้มสำหรับ Error
                 break;
             case 'waiting':
-                colorClass = "bg-amber-500 text-gray-900 animate-pulse";
+                colorClass = "bg-yellow-600 text-gray-900 animate-pulse";
                 break;
             case 'info':
             default:
@@ -115,7 +136,7 @@
     }
 
     /**
-     * ดึง Path สำหรับ Document ของทีมปัจจุบัน
+     * ดึง Path สำหรับ Document ของทีมปัจจุบัน (Firestore)
      */
     function getTeamDocRef() {
         if (!userId) throw new Error("User ID is not set.");
@@ -134,8 +155,9 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            
-            // 1. ลงชื่อเข้าใช้
+            setLogLevel('debug'); // ตั้งค่า Log Level สำหรับ Firestore
+
+            // 1. ลงชื่อเข้าใช้ (บังคับใช้ Auth)
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
             } else {
@@ -208,6 +230,7 @@
 
         const teamName = teamNameEl.value.trim();
         if (!teamName) {
+            // ใช้ Modal/Status แทน alert()
             showStatus("กรุณากรอกชื่อทีม", 'error');
             return;
         }
@@ -243,7 +266,6 @@
                 lat: lat,
                 lng: lng,
                 timestamp: Date.now(),
-                // เพิ่ม metadata เพื่อให้ Viewer App ใช้งานง่าย
                 metadata: {
                     appId: appId,
                     userId: userId,
@@ -257,10 +279,10 @@
                     // 2. เริ่มติดตามตำแหน่งอย่างต่อเนื่อง
                     watchId = navigator.geolocation.watchPosition(updateLocation, handleLocationError, {
                         enableHighAccuracy: true,
-                        maximumAge: 5000, // ใช้ข้อมูลที่เก็บไว้ไม่เกิน 5 วิ
+                        maximumAge: 5000, 
                         timeout: 10000 
                     });
-                    showStatus("🟢 เริ่มส่งตำแหน่งเรียลไทม์แล้ว", 'success');
+                    showStatus("✅ เริ่มส่งตำแหน่งเรียลไทม์แล้ว", 'success');
                 })
                 .catch(error => {
                     console.error("Error setting initial team data:", error);
@@ -292,10 +314,9 @@
             try {
                 // ใช้ updateDoc เพื่ออัปเดตเฉพาะ field ที่จำเป็น
                 await updateDoc(getTeamDocRef(), updateData);
-                showStatus(`🟢 กำลังส่ง: ${teamNameEl.value} | ความเร็ว: ${speed} กม./ชม.`, 'success');
+                showStatus(`✅ กำลังส่ง: ${teamNameEl.value} | ความเร็ว: ${speed} กม./ชม.`, 'success');
                 return; 
             } catch (e) {
-                console.error(`Update failed (Attempt ${i+1}):`, e);
                 // Retry with exponential backoff
                 if (i < MAX_RETRIES - 1) {
                     const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
