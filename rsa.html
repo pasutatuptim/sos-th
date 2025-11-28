@@ -1,157 +1,59 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ส่งตำแหน่งกู้ภัย – ทำงานทันที!</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
-        .box{
-            height:100vh;display:flex;flex-direction:column;justify-content:space-between;
-            padding:20px;background:linear-gradient(135deg,#000,#0d0d0d);
-        }
-        .logo{font-size:90px;text-align:center;margin-top:30px;animation:float 3s infinite}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
-        h1{font-size:1.8rem;text-align:center;margin:10px 0 5px;font-weight:800}
-        .desc{font-size:1.1rem;text-align:center;opacity:0.8}
-        .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px}
-        .status{
-            padding:20px;border-radius:18px;background:rgba(255,255,255,0.1);
-            text-align:center;font-size:1.3rem;width:90%;max-width:420px;
-            backdrop-filter:blur(10px);border:2px solid transparent;
-        }
-        .status.ok{border-color:#27ae60;background:rgba(39,174,96,0.2)}
-        .status.no{border-color:#e74c3c;background:rgba(231,76,60,0.2)}
-        .btn{
-            width:90%;max-width:420px;padding:24px;font-size:1.6rem;font-weight:800;
-            border:none;border-radius:20px;color:#fff;cursor:pointer;
-            box-shadow:0 12px 30px rgba(0,0,0,0.7);transition:0.3s;
-        }
-        .btn:active{transform:scale(0.95)}
-        .start{background:#27ae60}
-        .stop{background:#e74c3c;display:none}
-        .team{position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:8px 16px;border-radius:12px;font-size:0.9rem}
-        .debug{margin-top:10px;font-size:0.8rem;color:#aaa}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กู้ภัย GPS – บังคับถามใหม่</title>
+<style>
+  body{font-family:sans-serif;background:#000;color:#fff;text-align:center;padding:40px;font-size:1.4rem}
+  button{padding:20px 40px;margin:20px;font-size:1.8rem;border:none;border-radius:20px;background:#27ae60;color:#fff}
+  .red{background:#e74c3c}
+</style>
 </head>
 <body>
-
-<div class="team" id="team">กำลังโหลด...</div>
-
-<div class="box">
-    <div>
-        <div class="logo">🚤</div>
-        <h1>ส่งตำแหน่งเรียลไทม์</h1>
-        <div class="desc">สำหรับทีมกู้ภัย – เปิดทิ้งไว้ตลอด</div>
-    </div>
-
-    <div class="main">
-        <div class="status" id="msg">กดปุ่มเพื่อเริ่มส่ง (ทดสอบได้ทันที!)</div>
-        <button class="btn start" id="start">เริ่มส่ง GPS</button>
-        <button class="btn stop" id="stop">หยุดส่ง</button>
-    </div>
-
-    <div style="text-align:center;padding-bottom:20px;opacity:0.6;font-size:0.9rem">
-        Flood Rescue 2025 • Public DB Active
-    </div>
-</div>
+🚤 ทีมกู้ภัย – ส่งตำแหน่งเรียลไทม์<br><br>
+<button onclick="start()">เริ่มส่งตำแหน่ง (กดอนุญาต!)</button><br>
+<button class="red" onclick="reset()">รีเซ็ตการอนุญาต GPS</button>
+<div id="log" style="margin-top:30px"></div>
 
 <script>
-    // แก้แค่ตรงนี้ 4 บรรทัด (TEAM_ID ต้องไม่ซ้ำกัน!)
-    const TEAM_ID   = "boat_test_01";        // เปลี่ยนเป็น boat01, car02 ฯลฯ (ไม่ซ้ำ)
-    const TEAM_NAME = "เรือทดสอบ 01";       // ชื่อทีม
-    const VEHICLE   = "เรือ";                // ประเภทยานพาหนะ
-    const PHONE     = "081-000-0000";        // เบอร์โทร (optional)
+const TEAM_ID = "boat999"; // เปลี่ยนตามทีม
+const DB = "https://rescue-th-flood-2025-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams";
 
-    // ฐานข้อมูลใหม่ที่เปิด public จริง (ไม่มี permission denied)
-    const DB_URL = "https://rescue-th-flood-2025-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams";
+function log(t){document.getElementById('log').innerHTML+=t+'<br>'}
 
-    document.getElementById('team').textContent = `ทีม: ${TEAM_ID}`;
+function reset(){
+  // บังคับให้เบราว์เซอร์ถามใหม่
+  if ('permissions' in navigator) {
+    navigator.permissions.query({name:'geolocation'}).then(p=>{
+      if(p.state==='denied'){
+        alert('คุณเคยบล็อก GPS ไว้\nกรุณาไปที่ การตั้งค่า > ไซต์ > ตำแหน่งที่ตั้ง > อนุญาตให้ rescue.karnhubs.com ใหม่');
+      }
+    });
+  }
+  location.reload();
+}
 
-    const msg = document.getElementById('msg');
-    const startBtn = document.getElementById('start');
-    const stopBtn = document.getElementById('stop');
-    let watch = null;
-    let debug = document.createElement('div'); debug.className = 'debug'; msg.appendChild(debug);
-
-    function setMsg(text, ok = false) {
-        msg.innerHTML = text + '<div class="debug"></div>';
-        msg.className = 'status ' + (ok ? 'ok' : 'no');
-    }
-
-    async function send(pos) {
-        const data = {
-            name: TEAM_NAME,
-            vehicle: VEHICLE,
-            phone: PHONE || null,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            acc: Math.round(pos.coords.accuracy),
-            speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0,
-            time: new Date().toISOString(),
-            active: true
-        };
-
-        try {
-            const response = await fetch(`${DB_URL}/${TEAM_ID}.json`, {
-                method: "PUT",
-                body: JSON.stringify(data),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            if (response.ok) {
-                setMsg(`✅ ส่งสำเร็จ!<br>ตำแหน่ง: ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}<br>ความแม่นยำ: ±${data.acc}ม<br>เวลา: ${new Date().toLocaleTimeString('th-TH')}`, true);
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            setMsg(`❌ ส่งไม่ได้: ${error.message}<br>ตรวจสอบเน็ตหรือ GPS`, false);
-        }
-    }
-
-    startBtn.onclick = async () => {
-        if (!navigator.geolocation) return setMsg("❌ ไม่รองรับ GPS", false);
-
-        setMsg("🔄 กำลังขอ GPS...", true);
-        startBtn.style.display = "none";
-        stopBtn.style.display = "block";
-
-        // ส่งครั้งแรก
-        navigator.geolocation.getCurrentPosition(send, err => setMsg(`❌ GPS Error: ${err.message}`, false), {enableHighAccuracy: true});
-
-        // ติดตามต่อเนื่อง (ทุก 5 วินาที)
-        watch = navigator.geolocation.watchPosition(send, err => setMsg(`❌ GPS หยุด: ${err.message}`, false), { 
-            enableHighAccuracy: true, 
-            maximumAge: 5000, 
-            timeout: 10000 
-        });
-    };
-
-    stopBtn.onclick = async () => {
-        if (watch) navigator.geolocation.clearWatch(watch);
-        try {
-            await fetch(`${DB_URL}/${TEAM_ID}/active.json`, {method:"PUT", body: JSON.stringify(false)});
-        } catch {}
-        setMsg("🛑 หยุดส่งแล้ว", false);
-        startBtn.style.display = "block";
-        stopBtn.style.display = "none";
-    };
-
-    // ป้องกันหน้าจอดับ
-    let wakeLock = null;
-    const keepAwake = async () => {
-        if ('wakeLock' in navigator) {
-            try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
-        }
-    };
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
-    keepAwake();
-
-    // เริ่มอัตโนมัติหลัง 2 วินาที (ถ้า GPS พร้อม)
-    setTimeout(() => { if ('geolocation' in navigator) startBtn.click(); }, 2000);
+function start(){
+  if(!navigator.geolocation){log('ไม่รองรับ GPS');return}
+  log('กำลังขอตำแหน่ง…')
+  navigator.geolocation.getCurrentPosition(pos=>{
+    fetch(`${DB}/${TEAM_ID}.json`,{
+      method:'PUT',
+      body:JSON.stringify({
+        name:"ทีมทดสอบ 999",
+        lat:pos.coords.latitude,
+        lng:pos.coords.longitude,
+        acc:Math.round(pos.coords.accuracy),
+        time:new Date().toLocaleString('th-TH'),
+        active:true
+      })
+    }).then(()=>log('✅ ส่งสำเร็จแล้ว!')).catch(()=>log('❌ ส่งไม่ได้'))
+  }, err=>{
+    log('❌ '+err.message)
+    if(err.code===1) alert('คุณกด “ไม่อนุญาต” หรือเคยบล็อกไว้\nกดปุ่มแดงข้างล่างเพื่อรีเซ็ต')
+  },{enableHighAccuracy:true})
+}
 </script>
-
 </body>
 </html>
