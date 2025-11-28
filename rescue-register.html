@@ -3,144 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ลงทะเบียนทีมกู้ภัย</title>
+    <title>ลงทะเบียนและรายงานตำแหน่ง</title>
+    <!-- โหลด Tailwind CSS เพื่อการออกแบบที่ทันสมัยและ Responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body{font-family: 'Sarabun', sans-serif;background:#111;color:#fff;margin:0;padding:20px;}
-        .container{max-width:480px;margin:0 auto;background:#1a1a1a;padding:30px;border-radius:20px;box-shadow:0 10px 40px rgba(196,30,58,0.3);}
-        h1{text-align:center;color:#c41e3a;margin-bottom:30px;}
-        input, select, button{
-            width:100%;padding:16px;margin:12px 0;border-radius:12px;border:none;font-size:1.1rem;
-        }
-        input, select{background:#333;color:#fff;}
-        button{background:#c41e3a;color:#fff;font-weight:bold;cursor:pointer;transition:0.3s;}
-        button:hover{background:#e74c3c;transform:scale(1.05);}
-        .status{margin-top:20px;padding:15px;background:#27ae60;border-radius:12px;text-align:center;font-weight:bold;display:none;}
-        .status.error{background:#e74c3c;}
+        /* ตั้งค่า Font Sarabun */
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-<div class="container">
-    <h1>ลงทะเบียนทีมกู้ภัย</h1>
-    <input type="text" id="teamName" placeholder="ชื่อทีม / ชื่อหน่วย (เช่น ทีมเรือเร็ว 1)" required>
-    <input type="tel" id="phone" placeholder="เบอร์โทร (เช่น 0812345678)">
-    <select id="vehicle">
-        <option value="รถยนต์">รถยนต์กู้ภัย</option>
-        <option value="เรือ">เรือช่วยเหลือ</option>
-        <option value="รถพยาบาล">รถพยาบาล</option>
-        <option value="ดับเพลิง">รถดับเพลิง</option>
-        <option value="อาสาสมัคร">อาสาสมัครเดินเท้า</option>
-    </select>
-    <button onclick="registerTeam()">เริ่มส่งตำแหน่งเรียลไทม์</button>
-    <div id="status" class="status">กำลังบันทึก...</div>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+<div id="appContainer" class="w-full max-w-lg bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-amber-500">
+    <h1 class="text-3xl font-bold text-center text-amber-500 mb-6">
+        รายงานสถานะทีมกู้ภัย
+    </h1>
+    <p id="userIdDisplay" class="text-sm text-center text-gray-400 mb-4">
+        รหัสผู้ใช้งาน: กำลังเชื่อมต่อ...
+    </p>
+
+    <div class="space-y-4">
+        <input type="text" id="teamName" placeholder="ชื่อทีม / ชื่อหน่วย (เช่น ทีมเรือเร็ว 1)" required
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg">
+        
+        <input type="tel" id="phone" placeholder="เบอร์โทรติดต่อ (สำหรับศูนย์ฯ)"
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg">
+        
+        <select id="vehicle" 
+                class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-amber-500 focus:ring-amber-500 text-lg appearance-none">
+            <option value="รถยนต์">รถยนต์กู้ภัย</option>
+            <option value="เรือ">เรือช่วยเหลือ</option>
+            <option value="รถพยาบาล">รถพยาบาล</option>
+            <option value="ดับเพลิง">รถดับเพลิง</option>
+            <option value="อาสาสมัคร">อาสาสมัครเดินเท้า</option>
+            <option value="อากาศยาน">อากาศยาน / โดรน</option>
+        </select>
+        
+        <button id="startButton" onclick="startReporting()" disabled
+                class="w-full py-3 mt-4 text-xl font-bold rounded-lg transition duration-300 shadow-lg 
+                       bg-amber-600 hover:bg-amber-500 text-gray-900 disabled:bg-gray-600 disabled:text-gray-400">
+            เริ่มส่งตำแหน่งเรียลไทม์
+        </button>
+    </div>
+
+    <!-- แถบสถานะ/ข้อความแจ้งเตือน -->
+    <div id="statusContainer" class="mt-6">
+        <div id="statusMessage" 
+             class="p-4 rounded-lg text-center font-medium bg-gray-700 text-gray-300">
+            กำลังเตรียมระบบ...
+        </div>
+    </div>
 </div>
 
-<script>
-// เปลี่ยนชื่อโปรเจกต์ให้ตรงกับของคุณ
-const PROJECT_ID = "pasuta-sos";
-const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams`;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-let watchId = null;
-let teamId = localStorage.getItem("rescueTeamId");
+    // ตั้งค่า Log Level สำหรับ Firestore
+    setLogLevel('debug'); 
 
-async function registerTeam() {
-    const teamName = document.getElementById("teamName").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const vehicle = document.getElementById("vehicle").value;
+    // ตัวแปรส่วนกลางจาก Canvas Environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-    if (!teamName) return alert("กรุณากรอกชื่อทีม");
+    // ตัวแปร Firebase Services
+    let db, auth, userId = null;
+    let watchId = null;
+    let isAuthReady = false;
 
-    const statusEl = document.getElementById("status");
-    statusEl.style.display = "block";
-    statusEl.textContent = "กำลังขอตำแหน่ง...";
-    statusEl.className = "status";
+    // Elements
+    const statusMessageEl = document.getElementById('statusMessage');
+    const userIdDisplayEl = document.getElementById('userIdDisplay');
+    const teamNameEl = document.getElementById('teamName');
+    const phoneEl = document.getElementById('phone');
+    const vehicleEl = document.getElementById('vehicle');
+    const startButtonEl = document.getElementById('startButton');
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
+    // ----------------------------------------------------
+    // 1. UTILITY FUNCTIONS
+    // ----------------------------------------------------
+
+    /**
+     * แสดงข้อความสถานะบน UI
+     * @param {string} message - ข้อความที่ต้องการแสดง
+     * @param {'success'|'error'|'waiting'|'info'} type - ประเภทสถานะ
+     */
+    function showStatus(message, type = 'info') {
+        const baseClass = "p-4 rounded-lg text-center font-medium";
+        let colorClass;
+
+        switch (type) {
+            case 'success':
+                colorClass = "bg-green-600 text-white";
+                break;
+            case 'error':
+                colorClass = "bg-red-600 text-white";
+                break;
+            case 'waiting':
+                colorClass = "bg-amber-500 text-gray-900 animate-pulse";
+                break;
+            case 'info':
+            default:
+                colorClass = "bg-gray-700 text-gray-300";
+                break;
+        }
+        statusMessageEl.className = `${baseClass} ${colorClass}`;
+        statusMessageEl.textContent = message;
+    }
+
+    /**
+     * ดึง Path สำหรับ Document ของทีมปัจจุบัน
+     */
+    function getTeamDocRef() {
+        if (!userId) throw new Error("User ID is not set.");
+        // บันทึกในคอลเลกชันสาธารณะเพื่อให้แอป Viewer อ่านได้
+        const docPath = `/artifacts/${appId}/public/data/rescue_teams/${userId}`;
+        return doc(db, docPath);
+    }
+
+    // ----------------------------------------------------
+    // 2. FIREBASE & AUTH SETUP
+    // ----------------------------------------------------
+
+    async function initializeFirebase() {
+        showStatus("กำลังเริ่มต้น Firebase...", 'waiting');
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // 1. ลงชื่อเข้าใช้
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            // 2. รอการตรวจสอบสถานะ Auth
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    userIdDisplayEl.textContent = `รหัสผู้ใช้งาน: ${userId}`;
+                    startButtonEl.disabled = false;
+                    loadExistingTeamData();
+                } else {
+                    showStatus("การเชื่อมต่อล้มเหลว: ไม่ได้รับรหัสผู้ใช้", 'error');
+                }
+            });
+        } catch (error) {
+            console.error("Firebase Initialization Error:", error);
+            showStatus(`ข้อผิดพลาด Firebase: ${error.message}`, 'error');
+        }
+    }
+
+    // ----------------------------------------------------
+    // 3. DATA & LOCATION LOGIC
+    // ----------------------------------------------------
+
+    /**
+     * โหลดข้อมูลทีมที่มีอยู่แล้ว และตั้งค่า onSnapshot เพื่ออัปเดต UI
+     */
+    function loadExistingTeamData() {
+        if (!isAuthReady || !userId) return;
+
+        showStatus("กำลังดึงข้อมูลทีมเดิม...", 'info');
+        const teamDocRef = getTeamDocRef();
+        
+        // ใช้ onSnapshot เพื่อฟังการเปลี่ยนแปลงของ Document นี้แบบเรียลไทม์
+        onSnapshot(teamDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                teamNameEl.value = data.name || '';
+                phoneEl.value = data.phone || '';
+                vehicleEl.value = data.vehicle || 'รถยนต์';
+
+                // หากมีข้อมูลเดิมและกำลังส่งตำแหน่งอยู่ ให้เริ่มต้นติดตามต่อ
+                if (data.active && data.lat && data.lng && !watchId) {
+                    showStatus("พบข้อมูลเดิม กำลังเริ่มต้นติดตามตำแหน่งต่อ...", 'waiting');
+                    requestLocationAndStartWatch(true);
+                } else if (data.active) {
+                    showStatus("ข้อมูลพร้อม กด 'เริ่มส่งตำแหน่ง' เพื่อรายงานต่อ", 'info');
+                }
+            } else {
+                showStatus("กรุณากรอกข้อมูลเพื่อลงทะเบียนทีมใหม่", 'info');
+            }
+        }, (error) => {
+            console.error("Error fetching team data:", error);
+            showStatus("เกิดข้อผิดพลาดในการโหลดข้อมูลทีม", 'error');
+        });
+    }
+
+    /**
+     * เริ่มกระบวนการส่งตำแหน่ง
+     */
+    window.startReporting = function() {
+        if (!isAuthReady || !userId) {
+            showStatus("ระบบยังไม่พร้อม โปรดรอการเชื่อมต่อ", 'waiting');
+            return;
+        }
+
+        const teamName = teamNameEl.value.trim();
+        if (!teamName) {
+            showStatus("กรุณากรอกชื่อทีม", 'error');
+            return;
+        }
+
+        // หากมีการติดตามอยู่แล้ว ให้หยุดก่อนแล้วเริ่มใหม่
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        requestLocationAndStartWatch(false);
+    }
+
+    /**
+     * ขอสิทธิ์ตำแหน่งและตั้งค่า watchPosition
+     * @param {boolean} isInitialLoad - ใช้สำหรับโหลดข้อมูลเดิม
+     */
+    function requestLocationAndStartWatch(isInitialLoad) {
+        if (!navigator.geolocation) {
+            showStatus("เบราว์เซอร์ไม่รองรับ Geolocation", 'error');
+            return;
+        }
+
+        showStatus("กำลังขอตำแหน่งปัจจุบัน... โปรดอนุญาต GPS", 'waiting');
+        
+        navigator.geolocation.getCurrentPosition((position) => {
+            // สำเร็จในการรับตำแหน่งเริ่มต้น
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-
+            
+            // 1. บันทึกข้อมูลทีมเริ่มต้น
             const teamData = {
-                name: teamName,
-                phone: phone || null,
-                vehicle: vehicle,
+                name: teamNameEl.value.trim(),
+                phone: phoneEl.value.trim() || null,
+                vehicle: vehicleEl.value,
+                active: true,
                 lat: lat,
                 lng: lng,
                 timestamp: Date.now(),
-                active: true
+                // เพิ่ม metadata เพื่อให้ Viewer App ใช้งานง่าย
+                metadata: {
+                    appId: appId,
+                    userId: userId,
+                    createdAt: isInitialLoad ? undefined : Date.now() 
+                }
             };
 
-            try {
-                let ref;
-                if (teamId) {
-                    // อัปเดตทีมเดิม
-                    ref = await fetch(`${DB_URL}/${teamId}.json`, {
-                        method: "PATCH",
-                        body: JSON.stringify(teamData)
+            // ใช้ setDoc เพื่อสร้างหรือเขียนทับ Document ที่ Path เฉพาะ
+            setDoc(getTeamDocRef(), teamData, { merge: true })
+                .then(() => {
+                    // 2. เริ่มติดตามตำแหน่งอย่างต่อเนื่อง
+                    watchId = navigator.geolocation.watchPosition(updateLocation, handleLocationError, {
+                        enableHighAccuracy: true,
+                        maximumAge: 5000, // ใช้ข้อมูลที่เก็บไว้ไม่เกิน 5 วิ
+                        timeout: 10000 
                     });
-                } else {
-                    // สร้างทีมใหม่
-                    ref = await fetch(`${DB_URL}.json`, {
-                        method: "POST",
-                        body: JSON.stringify(teamData)
-                    });
-                    const result = await ref.json();
-                    teamId = result.name;
-                    localStorage.setItem("rescueTeamId", teamId);
-                }
+                    showStatus("🟢 เริ่มส่งตำแหน่งเรียลไทม์แล้ว", 'success');
+                })
+                .catch(error => {
+                    console.error("Error setting initial team data:", error);
+                    showStatus("❌ ข้อผิดพลาดในการบันทึกข้อมูลทีม", 'error');
+                });
 
-                statusEl.textContent = `ส่งตำแหน่งเรียบร้อย! ชื่อทีม: ${teamName}`;
-                statusEl.className = "status";
-
-                // เริ่มส่งตำแหน่งอัตโนมัติทุก 3 วินาที
-                if (watchId) navigator.geolocation.clearWatch(watchId);
-                watchId = navigator.geolocation.watchPosition(updateLocation, error => {
-                    statusEl.textContent = "ไม่สามารถติดตามตำแหน่งได้";
-                    statusEl.className = "status error";
-                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
-
-            } catch (e) {
-                statusEl.textContent = "บันทึกไม่สำเร็จ";
-                statusEl.className = "status error";
-            }
-        }, () => {
-            statusEl.textContent = "กรุณาเปิด GPS และอนุญาตตำแหน่ง";
-            statusEl.className = "status error";
-        });
+        }, handleLocationError, { enableHighAccuracy: true, timeout: 10000 });
     }
-}
 
-async function updateLocation(position) {
-    if (!teamId) return;
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
-    const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : 0;
+    /**
+     * อัปเดตตำแหน่งอย่างต่อเนื่องเมื่อมีการเคลื่อนที่
+     */
+    async function updateLocation(position) {
+        if (!userId) return;
 
-    await fetch(`${DB_URL}/${teamId}.json`, {
-        method: "PATCH",
-        body: JSON.stringify({
-            lat, lng,
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : 0; 
+        
+        const updateData = {
+            lat: lat,
+            lng: lng,
             speed: parseFloat(speed),
             timestamp: Date.now()
-        })
-    });
-}
+        };
 
-// ถ้ามี teamId อยู่แล้ว → โหลดข้อมูลเดิมมาเติมให้
-if (teamId) {
-    fetch(`${DB_URL}/${teamId}.json`)
-        .then(r => r.json())
-        .then(data => {
-            if (data) {
-                document.getElementById("teamName").value = data.name || "";
-                document.getElementById("phone").value = data.phone || "";
-                document.getElementById("vehicle").value = data.vehicle || "รถยนต์";
-                document.getElementById("status").style.display = "block";
-                document.getElementById("status").textContent = "เชื่อมต่อแล้ว – กำลังส่งตำแหน่ง...";
-                registerTeam(); // เริ่มส่งตำแหน่งทันที
+        const MAX_RETRIES = 3;
+        for (let i = 0; i < MAX_RETRIES; i++) {
+            try {
+                // ใช้ updateDoc เพื่ออัปเดตเฉพาะ field ที่จำเป็น
+                await updateDoc(getTeamDocRef(), updateData);
+                showStatus(`🟢 กำลังส่ง: ${teamNameEl.value} | ความเร็ว: ${speed} กม./ชม.`, 'success');
+                return; 
+            } catch (e) {
+                console.error(`Update failed (Attempt ${i+1}):`, e);
+                // Retry with exponential backoff
+                if (i < MAX_RETRIES - 1) {
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    showStatus("การอัปเดตตำแหน่งล้มเหลว", 'error');
+                }
             }
-        });
-}
+        }
+    }
+
+    /**
+     * จัดการข้อผิดพลาด Geolocation
+     */
+    function handleLocationError(error) {
+        console.error("Geolocation Error:", error);
+        let message;
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                message = "กรุณาอนุญาตให้เข้าถึงตำแหน่ง (GPS)";
+                break;
+            case error.POSITION_UNAVAILABLE:
+                message = "ตำแหน่งไม่พร้อมใช้งาน โปรดลองอีกครั้ง";
+                break;
+            case error.TIMEOUT:
+                message = "ขอตำแหน่งหมดเวลา โปรดตรวจสอบสัญญาณ GPS";
+                break;
+            default:
+                message = "ข้อผิดพลาดที่ไม่ทราบสาเหตุในการขอตำแหน่ง";
+        }
+        showStatus(`❌ ${message}`, 'error');
+    }
+
+    // ----------------------------------------------------
+    // 4. STARTUP
+    // ----------------------------------------------------
+    initializeFirebase();
 </script>
 </body>
 </html>
