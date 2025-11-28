@@ -2,106 +2,162 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>กู้ภัย GPS Realtime</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบติดตามทีมกู้ภัย Realtime</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
-        .box{height:100vh;display:flex;flex-direction:column;justify-content:space-between;padding:20px;background:linear-gradient(135deg,#000,#0a1a2e)}
-        .logo{font-size:90px;text-align:center;margin-top:40px;animation:float 3s infinite}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
-        h1{font-size:1.8rem;text-align:center;margin:15px 0;font-weight:800}
-        .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px}
-        .status{padding:25px;border-radius:20px;background:rgba(255,255,255,0.12);text-align:center;font-size:1.4rem;width:90%;max-width:420px;backdrop-filter:blur(12px);border:3px solid transparent;min-height:120px}
-        .status.ok{border-color:#27ae60;background:rgba(39,174,96,0.25)}
-        .status.no{border-color:#e74c3c;background:rgba(231,76,60,0.25)}
-        .team{position:fixed;top:15px;right:15px;background:rgba(0,0,0,0.7);padding:10px 18px;border-radius:15px;font-size:1rem;font-weight:bold}
-        .acc{font-size:1rem;margin-top:8px;opacity:0.9}
+        body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
+        #map{height:100vh;width:100%}
+        .header{position:fixed;top:0;left:0;right:0;height:60px;background:#c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;box-shadow:0 4px 30px rgba(0,0,0,0.8);}
+        .panel{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);padding:16px 24px;border-radius:20px;z-index:1000;border:3px solid #ffb300;box-shadow:0 10px 40px rgba(255,193,7,0.6);text-align:center;max-width:90%;}
+        .panel input, .panel select, .panel button{
+            padding:12px 16px;margin:6px 4px;border:none;border-radius:12px;font-size:1rem;font-family:'Sarabun',sans-serif;font-weight:700;
+        }
+        .panel input, .panel select{background:#222;color:#fff;}
+        .panel button{background:#ffb300;color:#000;cursor:pointer;transition:0.3s;}
+        .panel button:active{transform:scale(0.95);}
+        .panel button.stop{background:#e74c3c;color:#fff;}
+        #status{text-align:center;margin-top:10px;font-size:1.4rem;font-weight:800;}
+        .online{color:#27ae60;}
+        .offline{color:#e74c3c;}
     </style>
 </head>
 <body>
 
-<div class="team" id="team">ทีม: โหลด...</div>
+<div class="header">ระบบติดตามทีมกู้ภัย (Realtime)</div>
+<div id="map"></div>
 
-<div class="box">
-    <div>
-        <div class="logo">Boat</div>
-        <h1>กู้ภัย GPS Realtime</h1>
+<!-- พาเนลสำหรับทีมกู้ภัย -->
+<div class="panel" id="teamPanel">
+    <div style="margin-bottom:12px;font-size:1.4rem;font-weight:800;color:#ffb300;">
+        กรอกข้อมูลทีมแล้วกดเริ่มปฏิบัติการ
     </div>
-
-    <div class="main">
-        <div class="status" id="msg">กดปุ่มเพื่อเริ่มส่งตำแหน่ง</div>
-    </div>
-
-    <div style="text-align:center;padding-bottom:30px;opacity:0.7;font-size:0.9rem">
-        เปิดทิ้งไว้ตลอดภารกิจ • หน้าจอไม่ดับ
-    </div>
+    <input type="text" id="teamName" placeholder="ชื่อทีม (เช่น ทีมเรือราชประชา 1)" value="">
+    <select id="vehicle">
+        <option value="เรือ">เรือ</option>
+        <option value="รถยกสูง">รถยกสูง</option>
+        <option value="เฮลิคอปเตอร์">เฮลิคอปเตอร์</option>
+        <option value="เจ็ทสกี">เจ็ทสกี</option>
+        <option value="ทีมเดินเท้า">ทีมเดินเท้า</option>
+    </select>
+    <input type="tel" id="phone" placeholder="เบอร์โทร (ไม่บังคับ)">
+    <br>
+    <button onclick="startTracking()">เริ่มปฏิบัติการ</button>
+    <button onclick="stopTracking()" class="stop" style="display:none;" id="stopBtn">หยุดปฏิบัติการ</button>
+    <div id="status" class="offline">ยังไม่ได้เริ่ม</div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // แก้แค่ 3 บรรทัดนี้ตามทีม
-    const urlParams = new URLSearchParams(window.location.search);
-    const TEAM_ID = urlParams.get('t') || "boat01";  // เช่น ?t=boat05, car01, heli01
-    const TEAM_NAME = urlParams.get('n') || "เรือกู้ภัย " + TEAM_ID.replace(/[^0-9]/g,'');
-    const VEHICLE = "เรือ";
+// === ตั้งค่า Firebase ของคุณที่นี่ ===
+const SOS_DB      = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
+const RESCUE_DB   = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
 
-    // ฐานข้อมูล public จริง (ส่งได้ทันที)
-    const DB = "https://rescue-th-flood-2025-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams";
+// ตัวแปร
+let map, marker, trail, watchId, teamId;
 
-    document.getElementById('team').textContent = TEAM_NAME;
+// สร้างแผนที่
+map = L.map('map').setView([13.7563, 100.5018], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    const msg = document.getElementById('msg');
-    function setMsg(text, ok = false) {
-        msg.innerHTML = text.replace(/\n/g, '<br>') + '<div class="acc" id="acc"></div>';
-        msg.className = 'status ' + (ok ? 'ok' : 'no');
+// ไอคอนทีมกู้ภัย
+const rescueIcon = L.divIcon({
+    html: `<div style="width:50px;height:50px;background:#ffb300;border:6px solid #000;border-radius:50%;box-shadow:0 6px 30px rgba(0,0,0,0.8);animation:pulse 2s infinite;"></div>`,
+    className: '', iconSize: [62,62], iconAnchor: [31,31]
+});
+const pulseStyle = `
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,193,7,0.8)}100%{box-shadow:0 0 0 20px rgba(255,193,7,0)}}
+`;
+
+// เริ่มติดตามตำแหน่ง
+function startTracking() {
+    const name = document.getElementById('teamName').value.trim();
+    const vehicle = document.getElementById('vehicle').value;
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!name) {
+        alert('กรุณาใส่ชื่อทีม');
+        return;
     }
 
-    let watch = null;
-    async function send(pos) {
-        const data = {
-            name: TEAM_NAME,
-            vehicle: VEHICLE,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            acc: Math.round(pos.coords.accuracy),
-            speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0,
-            time: new Date().toISOString(),
-            active: true
-        };
-        try {
-            await fetch(`${DB}/${TEAM_ID}.json`, {method:"PUT", body:JSON.stringify(data)});
-            setMsg(`ส่งสำเร็จ!<br>ความแม่นยำ ±${data.acc} เมตร<br>${new Date().toLocaleTimeString('th-TH')}`, true);
-            document.getElementById('acc').textContent = `ความเร็ว ${data.speed} กม./ชม.`;
-        } catch {
-            setMsg("ส่งไม่ได้ – ตรวจสอบเน็ต", false);
-        }
+    document.getElementById('teamPanel').style.borderColor = '#27ae60';
+    document.getElementById('status').textContent = 'กำลังเชื่อมต่อ GPS...';
+    document.getElementById('status').className = 'online';
+    document.getElementById('stopBtn').style.display = 'inline-block';
+
+    // สร้าง ID ทีม (สุ่มแต่ไม่ซ้ำ)
+    teamId = 'team_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+
+    if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(pos => {
+            const {latitude, longitude, accuracy, speed} = pos.coords;
+
+            // อัปเดต Firebase
+            fetch(`${RESCUE_DB}/${teamId}.json`, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    name, vehicle, phone,
+                    lat: latitude,
+                    lng: longitude,
+                    speed: speed ? (speed * 3.6).toFixed(1) : 0, // m/s → km/h
+                    accuracy,
+                    active: true,
+                    updatedAt: Date.now()
+                })
+            });
+
+            // อัปเดตแผนที่
+            if (!marker) {
+                marker = L.marker([latitude, longitude], {icon: rescueIcon}).addTo(map);
+                trail = L.polyline([], {color:'#ffb300', weight:6, opacity:0.8}).addTo(map);
+                map.setView([latitude, longitude], 16);
+            } else {
+                marker.setLatLng([latitude, longitude]);
+                trail.addLatLng([latitude, longitude]);
+                if (trail.getLatLngs().length > 100) trail.getLatLngs().shift();
+            }
+
+            document.getElementById('status').innerHTML = `
+                ออนไลน์<br>
+                <small>ความเร็ว ${speed ? (speed*3.6).toFixed(1) : 0} กม./ชม. • ความแม่นยำ ±${accuracy.toFixed(0)}ม</small>
+            `;
+
+        }, err => {
+            alert('ไม่สามารถเข้าถึงตำแหน่งได้ เปิด GPS ด้วยนะครับ');
+            console.error(err);
+        }, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000});
+    } else {
+        alert('เบราว์เซอร์ไม่รองรับ GPS');
     }
+}
 
-    function start() {
-        if (!navigator.geolocation) return setMsg("ไม่รองรับ GPS", false);
-        setMsg("กำลังขอตำแหน่ง...", true);
+// หยุดปฏิบัติการ
+function stopTracking() {
+    if (confirm('ยืนยันหยุดปฏิบัติการและหายจากศูนย์บัญชาการ?')) {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        if (marker) map.removeLayer(marker);
+        if (trail) map.removeLayer(trail);
 
-        navigator.geolocation.getCurrentPosition(send, () => setMsg("กรุณากดอนุญาต GPS!", false), {enableHighAccuracy:true});
+        // ลบตัวเองออกจากฐานข้อมูล
+        fetch(`${RESCUE_DB}/${teamId}.json`, {method: 'DELETE'});
 
-        watch = navigator.geolocation.watchPosition(send, () => {}, {
-            enableHighAccuracy: true,
-            maximumAge: 5000,
-            timeout: 15000
-        });
+        document.getElementById('teamPanel').style.borderColor = '#ffb300';
+        document.getElementById('status').textContent = 'หยุดปฏิบัติการแล้ว';
+        document.getElementById('status').className = 'offline';
+        document.getElementById('stopBtn').style.display = 'none';
+        teamId = null;
     }
+}
 
-    // ป้องกันหน้าจอดับ (สำคัญมาก!)
-    let wakeLock = null;
-    const keep = async () => {
-        try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
-    };
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) keep(); });
-    keep();
-
-    // เริ่มอัตโนมัติทันทีที่โหลด
-    setTimeout(start, 1000);
+// ถ้ากลับมาหน้าเว็บแล้วเคยเริ่มไว้ → ดึงข้อมูลเก่ากลับมา
+window.onload = () => {
+    const style = document.createElement('style');
+    style.textContent = pulseStyle;
+    document.head.appendChild(style);
+};
 </script>
+
 </body>
 </html>
