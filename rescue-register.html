@@ -3,372 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ลงทะเบียนและรายงานตำแหน่ง</title>
-    <!-- โหลด Tailwind CSS เพื่อการออกแบบที่ทันสมัยและ Responsive -->
+    <title>ลงทะเบียนทีมกู้ภัย</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Sarabun Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ตั้งค่า Font Sarabun */
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; }
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+        /* Custom red shadow for the card */
+        .card-shadow {
+            box-shadow: 0 10px 40px rgba(239, 68, 68, 0.3); /* Based on tailwind's red-500 */
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
-<div id="appContainer" class="w-full max-w-lg bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-yellow-500">
-    <h1 class="text-3xl font-bold text-center text-yellow-400 mb-6">
-        ระบบลงทะเบียนและรายงานสถานะ
-    </h1>
-    <p id="userIdDisplay" class="text-sm text-center text-gray-400 mb-4 truncate">
-        รหัสผู้ใช้งาน: กำลังเชื่อมต่อ...
-    </p>
+<div class="container max-w-md mx-auto bg-gray-800 p-8 rounded-3xl card-shadow w-full">
+    <h1 class="text-3xl font-bold text-red-500 text-center mb-8">ลงทะเบียนทีมกู้ภัย</h1>
 
-    <div class="space-y-4">
-        <!-- Input fields with amber focus style -->
+    <!-- Registration Form -->
+    <div id="registration-form">
         <input type="text" id="teamName" placeholder="ชื่อทีม / ชื่อหน่วย (เช่น ทีมเรือเร็ว 1)" required
-               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg">
+               class="w-full p-4 my-3 rounded-xl border border-gray-700 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
         
-        <input type="tel" id="phone" placeholder="เบอร์โทรติดต่อ (สำหรับศูนย์ฯ)"
-               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg">
+        <input type="tel" id="phone" placeholder="เบอร์โทร (เช่น 0812345678)"
+               class="w-full p-4 my-3 rounded-xl border border-gray-700 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
         
-        <select id="vehicle" 
-                class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-yellow-500 text-lg appearance-none">
+        <select id="vehicle"
+                class="w-full p-4 my-3 rounded-xl border border-gray-700 bg-gray-700 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
             <option value="รถยนต์">รถยนต์กู้ภัย</option>
             <option value="เรือ">เรือช่วยเหลือ</option>
             <option value="รถพยาบาล">รถพยาบาล</option>
             <option value="ดับเพลิง">รถดับเพลิง</option>
             <option value="อาสาสมัคร">อาสาสมัครเดินเท้า</option>
-            <option value="อากาศยาน">อากาศยาน / โดรน</option>
         </select>
         
-        <!-- Main action button with amber/yellow color -->
-        <button id="startButton" onclick="startReporting()" disabled
-                class="w-full py-3 mt-4 text-xl font-bold rounded-lg transition duration-300 shadow-lg 
-                       bg-yellow-600 hover:bg-yellow-500 text-gray-900 disabled:bg-gray-600 disabled:text-gray-400">
+        <button id="registerButton" onclick="registerTeam()"
+                class="w-full p-4 my-3 rounded-xl bg-red-600 text-white font-extrabold cursor-pointer transition duration-300 transform hover:bg-red-700 hover:scale-[1.02] text-xl uppercase tracking-wider shadow-lg shadow-red-600/50">
             เริ่มส่งตำแหน่งเรียลไทม์
         </button>
     </div>
 
-    <!-- แถบสถานะ/ข้อความแจ้งเตือน -->
-    <div id="statusContainer" class="mt-6">
-        <div id="statusMessage" 
-             class="p-4 rounded-lg text-center font-medium bg-gray-700 text-gray-300">
-            กำลังเตรียมระบบ...
-        </div>
+    <!-- Status Message Display -->
+    <div id="status" class="mt-6 p-4 rounded-xl text-center font-bold transition-all duration-300 hidden">
+        กำลังเชื่อมต่อ...
+    </div>
+
+    <!-- Optional: Display User ID for debugging/sharing in collaborative environment -->
+    <div class="mt-6 pt-4 border-t border-gray-700 text-sm text-gray-500 text-center">
+        รหัสผู้ใช้ (User ID): <span id="displayUserId" class="font-mono text-gray-400">...</span>
     </div>
 </div>
 
 <script type="module">
-    // Import libraries for Firebase App, Auth, and Realtime Database (RTDB)
+    // --- Firebase Imports ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    // Import RTDB specific functions
-    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-    
-    // --- CONFIGURATION SETUP: ใช้ Realtime Database URL ที่กำหนด ---
-    
-    // URL ฐานข้อมูล Realtime Database ที่ผู้ใช้กำหนด (ต้องชี้ไปที่ Root)
-    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app'; 
-    
-    // ใช้ค่า Default สำหรับ projectId ในกรณีที่ไม่สามารถดึงค่าจาก Canvas ได้
-    const DEFAULT_PROJECT_ID = 'pasuta-sos-default-rtdb';
-    
-    // ดึงค่า Global Variables (จาก Canvas Environment)
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : DEFAULT_PROJECT_ID; 
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, updateDoc, getDoc, collection, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    let firebaseConfig;
-    try {
-        firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : 'null');
-        
-        // หาก config ไม่ถูกส่งมาหรือไม่มี projectId ให้สร้าง config ขั้นต่ำ
-        if (!firebaseConfig || !firebaseConfig.projectId) {
-            firebaseConfig = {
-                // ใช้ค่าเริ่มต้นหรือค่าที่อนุมานได้
-                projectId: DEFAULT_PROJECT_ID, 
-                databaseURL: DB_URL,
-                apiKey: "", 
-            };
-        }
-        
-        // ตรวจสอบและกำหนด databaseURL ให้ถูกต้องเสมอ (Root URL)
-        firebaseConfig.databaseURL = DB_URL;
-        
-    } catch (e) {
-        // Fallback สำหรับข้อผิดพลาดในการ Parse JSON
-        firebaseConfig = {
-            projectId: DEFAULT_PROJECT_ID,
-            databaseURL: DB_URL,
-            apiKey: "", 
-        };
-    }
-    // ----------------------------------------------------
-
-    // ตัวแปร Firebase Services
-    let db, auth, userId = null;
-    let watchId = null;
+    // Global Firebase variables
+    let app, db, auth;
+    let userId = null;
     let isAuthReady = false;
 
-    // Elements
-    const statusMessageEl = document.getElementById('statusMessage');
-    const userIdDisplayEl = document.getElementById('userIdDisplay');
-    const teamNameEl = document.getElementById('teamName');
-    const phoneEl = document.getElementById('phone');
-    const vehicleEl = document.getElementById('vehicle');
-    const startButtonEl = document.getElementById('startButton');
+    // --- Global Canvas Variables (Mandatory Use) ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-    // ----------------------------------------------------
-    // 1. UTILITY FUNCTIONS
-    // ----------------------------------------------------
+    // Firestore paths
+    const RESCUE_TEAMS_COLLECTION_PATH = `artifacts/${appId}/public/data/rescue_teams`;
+
+    // Geolocation Watcher ID
+    let watchId = null;
+
+    // DOM Elements
+    const statusEl = document.getElementById("status");
+    const registerButton = document.getElementById("registerButton");
+    const teamNameInput = document.getElementById("teamName");
+    const phoneInput = document.getElementById("phone");
+    const vehicleSelect = document.getElementById("vehicle");
+    const displayUserIdEl = document.getElementById("displayUserId");
+
+    // --- Utility Functions ---
 
     /**
-     * แสดงข้อความสถานะบน UI และใช้โทนสีส้มเหลือง (ยกเว้น error)
-     * @param {string} message - ข้อความที่ต้องการแสดง
-     * @param {'success'|'error'|'waiting'|'info'} type - ประเภทสถานะ
+     * @param {string} message 
+     * @param {'success' | 'error' | 'loading'} type 
      */
-    function showStatus(message, type = 'info') {
-        const baseClass = "p-4 rounded-lg text-center font-medium";
-        let colorClass;
-
-        switch (type) {
-            case 'success':
-                colorClass = "bg-yellow-500 text-gray-900"; // ส้มเหลืองสำหรับ Success
-                break;
-            case 'error':
-                colorClass = "bg-red-700 text-white"; // แดงเข้มสำหรับ Error
-                break;
-            case 'waiting':
-                colorClass = "bg-yellow-600 text-gray-900 animate-pulse";
-                break;
-            case 'info':
-            default:
-                colorClass = "bg-gray-700 text-gray-300";
-                break;
+    function showStatus(message, type = 'loading') {
+        statusEl.textContent = message;
+        statusEl.classList.remove('hidden', 'bg-red-600', 'bg-green-600', 'bg-blue-600');
+        
+        let bgColor;
+        if (type === 'success') {
+            bgColor = 'bg-green-600';
+        } else if (type === 'error') {
+            bgColor = 'bg-red-600';
+        } else {
+            bgColor = 'bg-blue-600'; // Using blue for loading/info
         }
-        statusMessageEl.className = `${baseClass} ${colorClass}`;
-        statusMessageEl.textContent = message;
+        statusEl.classList.add(bgColor);
+    }
+    
+    // --- Firebase Initialization and Auth ---
+
+    /**
+     * Initializes Firebase and authenticates the user.
+     */
+    async function initFirebase() {
+        if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+            console.error("Firebase config is missing or invalid.");
+            showStatus("เกิดข้อผิดพลาด: การตั้งค่า Firebase ไม่ถูกต้อง", 'error');
+            registerButton.disabled = true;
+            return;
+        }
+
+        try {
+            // 1. Initialize App and Services
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('Debug'); // Enable Firestore logging
+
+            // 2. Set Auth State Persistence
+            await setPersistence(auth, browserSessionPersistence);
+            
+            // 3. Auth State Listener
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    displayUserIdEl.textContent = userId;
+                    console.log("Authenticated with user ID:", userId);
+                    await loadTeamData(userId);
+                } else {
+                    // Try to sign in
+                    await handleSignIn();
+                }
+            });
+
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            showStatus("เกิดข้อผิดพลาดในการเริ่มต้นระบบ: " + error.message, 'error');
+            registerButton.disabled = true;
+        }
     }
 
     /**
-     * ดึง Path สำหรับ Reference ของทีมปัจจุบัน (RTDB)
+     * Handles sign-in logic (Custom Token if available, otherwise Anonymous).
      */
-    function getTeamRef() {
-        if (!userId) throw new Error("User ID is not set.");
-        // RTDB Path: /rescue_teams/{userId}
-        const path = `rescue_teams/${userId}`; 
-        return ref(db, path);
-    }
-
-    // ----------------------------------------------------
-    // 2. FIREBASE & AUTH SETUP
-    // ----------------------------------------------------
-
-    async function initializeFirebase() {
-        showStatus("กำลังเริ่มต้น Firebase...", 'waiting');
+    async function handleSignIn() {
         try {
-            const app = initializeApp(firebaseConfig);
-            // ใช้ getDatabase() สำหรับ RTDB
-            db = getDatabase(app); 
-            auth = getAuth(app);
-            // ไม่จำเป็นต้องใช้ setLogLevel สำหรับ Firestore
-
-            // 1. ลงชื่อเข้าใช้
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
             } else {
                 await signInAnonymously(auth);
             }
-
-            // 2. รอการตรวจสอบสถานะ Auth และตั้งค่า userId
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    userId = user.uid;
-                    isAuthReady = true;
-                    userIdDisplayEl.textContent = `รหัสผู้ใช้งาน: ${userId}`;
-                    startButtonEl.disabled = false;
-                    loadExistingTeamData();
-                } else {
-                    showStatus("การเชื่อมต่อล้มเหลว: ไม่ได้รับรหัสผู้ใช้", 'error');
-                }
-            });
         } catch (error) {
-            console.error("Firebase Initialization Error:", error);
-            showStatus(`ข้อผิดพลาด Firebase: ${error.message}`, 'error');
+            console.error("Sign-in failed:", error);
+            showStatus("ไม่สามารถเข้าสู่ระบบ: " + error.message, 'error');
+            registerButton.disabled = true;
         }
     }
 
-    // ----------------------------------------------------
-    // 3. DATA & LOCATION LOGIC
-    // ----------------------------------------------------
+    // --- Firestore Data Operations ---
 
     /**
-     * โหลดข้อมูลทีมที่มีอยู่แล้ว และตั้งค่า onValue เพื่ออัปเดต UI (RTDB)
+     * Loads existing team data for the current user.
+     * @param {string} docId The document ID (which is the userId)
      */
-    function loadExistingTeamData() {
-        if (!isAuthReady || !userId) return;
+    async function loadTeamData(docId) {
+        try {
+            const teamDocRef = doc(db, RESCUE_TEAMS_COLLECTION_PATH, docId);
+            const teamDoc = await getDoc(teamDocRef);
 
-        showStatus("กำลังดึงข้อมูลทีมเดิม...", 'info');
-        const teamRef = getTeamRef();
-        
-        // ใช้ onValue เพื่อฟังการเปลี่ยนแปลงของ Reference นี้แบบเรียลไทม์
-        onValue(teamRef, (snapshot) => {
-            const data = snapshot.val(); // ดึงข้อมูล
-            if (data) {
-                teamNameEl.value = data.name || '';
-                phoneEl.value = data.phone || '';
-                vehicleEl.value = data.vehicle || 'รถยนต์';
-
-                // หากมีข้อมูลเดิมและกำลังส่งตำแหน่งอยู่ ให้เริ่มต้นติดตามต่อ
-                if (data.active && data.lat && data.lng && !watchId) {
-                    showStatus("พบข้อมูลเดิม กำลังเริ่มต้นติดตามตำแหน่งต่อ...", 'waiting');
-                    requestLocationAndStartWatch(true);
-                } else if (data.active) {
-                    showStatus("ข้อมูลพร้อม กด 'เริ่มส่งตำแหน่ง' เพื่อรายงานต่อ", 'info');
-                }
+            if (teamDoc.exists()) {
+                const data = teamDoc.data();
+                teamNameInput.value = data.name || "";
+                phoneInput.value = data.phone || "";
+                vehicleSelect.value = data.vehicle || "รถยนต์";
+                
+                showStatus("โหลดข้อมูลทีมเรียบร้อย – เริ่มส่งตำแหน่งได้เลย", 'success');
+                // Auto-start location tracking if data exists
+                registerTeam(true); 
             } else {
-                showStatus("กรุณากรอกข้อมูลเพื่อลงทะเบียนทีมใหม่", 'info');
+                showStatus("กรุณากรอกข้อมูลทีมเพื่อเริ่มต้น", 'loading');
             }
-        }, (error) => {
-            console.error("Error fetching team data:", error);
-            showStatus("เกิดข้อผิดพลาดในการโหลดข้อมูลทีม", 'error');
-        });
+        } catch (error) {
+            console.error("Error loading team data:", error);
+            showStatus("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message, 'error');
+        }
     }
 
     /**
-     * เริ่มกระบวนการส่งตำแหน่ง
-     */
-    window.startReporting = function() {
-        if (!isAuthReady || !userId) {
-            showStatus("ระบบยังไม่พร้อม โปรดรอการเชื่อมต่อ", 'waiting');
-            return;
-        }
-
-        const teamName = teamNameEl.value.trim();
-        if (!teamName) {
-            showStatus("กรุณากรอกชื่อทีม", 'error');
-            return;
-        }
-
-        // หากมีการติดตามอยู่แล้ว ให้หยุดก่อนแล้วเริ่มใหม่
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        requestLocationAndStartWatch(false);
-    }
-
-    /**
-     * ขอสิทธิ์ตำแหน่งและตั้งค่า watchPosition
-     */
-    function requestLocationAndStartWatch(isInitialLoad) {
-        if (!navigator.geolocation) {
-            showStatus("เบราว์เซอร์ไม่รองรับ Geolocation", 'error');
-            return;
-        }
-
-        showStatus("กำลังขอตำแหน่งปัจจุบัน... โปรดอนุญาต GPS", 'waiting');
-        
-        navigator.geolocation.getCurrentPosition((position) => {
-            // สำเร็จในการรับตำแหน่งเริ่มต้น
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            // 1. บันทึกข้อมูลทีมเริ่มต้น (ใช้ update() ของ RTDB)
-            const teamData = {
-                name: teamNameEl.value.trim(),
-                phone: phoneEl.value.trim() || null,
-                vehicle: vehicleEl.value,
-                active: true,
-                lat: lat,
-                lng: lng,
-                timestamp: Date.now(),
-                metadata: {
-                    appId: appId,
-                    userId: userId,
-                    // ไม่ต้องส่ง createdAt ถ้าเป็นการโหลดครั้งแรกเพื่อรักษาค่าเดิมไว้
-                    createdAt: isInitialLoad ? undefined : Date.now() 
-                }
-            };
-
-            // ใช้ update() เพื่อสร้างหรืออัปเดตข้อมูลที่ Reference ที่กำหนด
-            update(getTeamRef(), teamData)
-                .then(() => {
-                    // 2. เริ่มติดตามตำแหน่งอย่างต่อเนื่อง
-                    watchId = navigator.geolocation.watchPosition(updateLocation, handleLocationError, {
-                        enableHighAccuracy: true,
-                        maximumAge: 5000, 
-                        timeout: 10000 
-                    });
-                    showStatus("✅ เริ่มส่งตำแหน่งเรียลไทม์แล้ว", 'success');
-                })
-                .catch(error => {
-                    console.error("Error setting initial team data:", error);
-                    showStatus("❌ ข้อผิดพลาดในการบันทึกข้อมูลทีม", 'error');
-                });
-
-        }, handleLocationError, { enableHighAccuracy: true, timeout: 10000 });
-    }
-
-    /**
-     * อัปเดตตำแหน่งอย่างต่อเนื่องเมื่อมีการเคลื่อนที่ (RTDB)
+     * Updates the location in Firestore.
+     * @param {GeolocationPosition} position 
      */
     async function updateLocation(position) {
-        if (!userId) return;
+        if (!userId || !db) {
+            console.warn("Cannot update location: User not authenticated or Firestore not ready.");
+            return;
+        }
 
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        // แปลง m/s เป็น km/h
-        const speed = position.coords.speed !== null ? (position.coords.speed * 3.6).toFixed(1) : 0; 
-        
-        // ข้อมูลที่ต้องการอัปเดต (จะอัปเดตเฉพาะ field เหล่านี้)
-        const updateData = {
-            lat: lat,
-            lng: lng,
-            speed: parseFloat(speed),
-            timestamp: Date.now()
-        };
+        const speed = position.coords.speed ? (position.coords.speed * 3.6) : 0; // Convert m/s to km/h
 
-        const MAX_RETRIES = 3;
-        for (let i = 0; i < MAX_RETRIES; i++) {
-            try {
-                // ใช้ update() ของ RTDB
-                await update(getTeamRef(), updateData); 
-                showStatus(`✅ กำลังส่ง: ${teamNameEl.value} | ความเร็ว: ${speed} กม./ชม.`, 'success');
-                return; 
-            } catch (e) {
-                // Retry with exponential backoff
-                if (i < MAX_RETRIES - 1) {
-                    const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                } else {
-                    showStatus("การอัปเดตตำแหน่งล้มเหลว", 'error');
-                }
-            }
+        try {
+            const teamDocRef = doc(db, RESCUE_TEAMS_COLLECTION_PATH, userId);
+            
+            // Only update the location and timestamp fields
+            await updateDoc(teamDocRef, {
+                lat: lat,
+                lng: lng,
+                speed: parseFloat(speed.toFixed(1)),
+                timestamp: Date.now()
+            });
+
+            const teamName = teamNameInput.value.trim();
+            showStatus(`กำลังส่งตำแหน่ง... (${lat.toFixed(4)}, ${lng.toFixed(4)}) ความเร็ว: ${speed.toFixed(1)} กม./ชม.`, 'loading');
+
+        } catch (e) {
+            console.error("Error updating location:", e);
+            // Don't change status to error permanently, just log it.
         }
     }
+
+    // --- Main Registration and Tracking Logic ---
 
     /**
-     * จัดการข้อผิดพลาด Geolocation
+     * Registers the team data and starts real-time location tracking.
+     * @param {boolean} isInitialLoad If true, skips form validation.
      */
-    function handleLocationError(error) {
-        console.error("Geolocation Error:", error);
-        let message;
-        switch (error.code) {
-            case error.PERMISSION_DENIED:
-                message = "กรุณาอนุญาตให้เข้าถึงตำแหน่ง (GPS)";
-                break;
-            case error.POSITION_UNAVAILABLE:
-                message = "ตำแหน่งไม่พร้อมใช้งาน โปรดลองอีกครั้ง";
-                break;
-            case error.TIMEOUT:
-                message = "ขอตำแหน่งหมดเวลา โปรดตรวจสอบสัญญาณ GPS";
-                break;
-            default:
-                message = "ข้อผิดพลาดที่ไม่ทราบสาเหตุในการขอตำแหน่ง";
+    window.registerTeam = async function(isInitialLoad = false) {
+        if (!isAuthReady || !userId) {
+            showStatus("กำลังเตรียมระบบ... กรุณารอสักครู่", 'loading');
+            return;
         }
-        showStatus(`❌ ${message}`, 'error');
-    }
 
-    // ----------------------------------------------------
-    // 4. STARTUP
-    // ----------------------------------------------------
-    initializeFirebase();
+        const teamName = teamNameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const vehicle = vehicleSelect.value;
+
+        if (!teamName) {
+            showStatus("กรุณากรอกชื่อทีม/หน่วย", 'error');
+            return;
+        }
+        
+        showStatus("กำลังขอตำแหน่ง GPS...", 'loading');
+        registerButton.disabled = true;
+
+        if (navigator.geolocation) {
+            // Function to handle location success and start watchPosition
+            const startWatching = (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                const teamData = {
+                    name: teamName,
+                    phone: phone || null,
+                    vehicle: vehicle,
+                    lat: lat,
+                    lng: lng,
+                    timestamp: Date.now(),
+                    active: true,
+                    userId: userId, // Store userId for clarity
+                    appId: appId
+                };
+
+                const saveTeamData = async () => {
+                    try {
+                        const teamDocRef = doc(db, RESCUE_TEAMS_COLLECTION_PATH, userId);
+                        
+                        // Use setDoc to create or fully replace the document
+                        await setDoc(teamDocRef, teamData, { merge: true });
+
+                        // Stop any previous watch
+                        if (watchId) navigator.geolocation.clearWatch(watchId);
+
+                        // Start continuous location update
+                        watchId = navigator.geolocation.watchPosition(updateLocation, 
+                            (error) => {
+                                console.error("Geolocation watch error:", error);
+                                showStatus("ไม่สามารถติดตามตำแหน่งได้", 'error');
+                            }, 
+                            { 
+                                enableHighAccuracy: true, 
+                                maximumAge: 0, 
+                                timeout: 15000 
+                            }
+                        );
+
+                        showStatus(`เชื่อมต่อแล้ว – กำลังส่งตำแหน่งเรียลไทม์ ชื่อทีม: ${teamName}`, 'success');
+                        registerButton.disabled = false;
+                        registerButton.textContent = "อัปเดตข้อมูลและส่งตำแหน่งต่อ";
+                    } catch (e) {
+                        console.error("Firestore save failed:", e);
+                        showStatus("บันทึกข้อมูลไม่สำเร็จ: " + e.message, 'error');
+                        registerButton.disabled = false;
+                    }
+                };
+
+                saveTeamData();
+            };
+
+            // Function to handle location error
+            const handleGeoError = (error) => {
+                console.error("Geolocation error:", error);
+                showStatus("กรุณาเปิด GPS และอนุญาตตำแหน่งเพื่อส่งตำแหน่ง", 'error');
+                registerButton.disabled = false;
+            };
+
+            // Get initial position before starting the watch
+            navigator.geolocation.getCurrentPosition(startWatching, handleGeoError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+
+        } else {
+            showStatus("เบราว์เซอร์นี้ไม่รองรับ Geolocation", 'error');
+            registerButton.disabled = false;
+        }
+    }
+    
+    // --- Start the Application ---
+    initFirebase();
+
 </script>
 </body>
 </html>
