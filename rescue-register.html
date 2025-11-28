@@ -66,13 +66,15 @@
     
     // --- CONFIGURATION SETUP: ใช้ Realtime Database URL ที่กำหนด ---
     
-    const PROJECT_ID = "pasuta-sos";
-    // กำหนด databaseURL เป็น Root URL เท่านั้น เพื่อให้ getDatabase() ทำงานได้
-    const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`; 
+    // URL ฐานข้อมูล Realtime Database ที่ผู้ใช้กำหนด (ต้องชี้ไปที่ Root)
+    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app'; 
+    
+    // ใช้ค่า Default สำหรับ projectId ในกรณีที่ไม่สามารถดึงค่าจาก Canvas ได้
+    const DEFAULT_PROJECT_ID = 'pasuta-sos-default-rtdb';
     
     // ดึงค่า Global Variables (จาก Canvas Environment)
-    const appId = typeof __app_id !== 'undefined' ? __app_id : PROJECT_ID; // ใช้ PROJECT_ID เป็นค่าสำรอง
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : DEFAULT_PROJECT_ID; 
 
     let firebaseConfig;
     try {
@@ -81,7 +83,8 @@
         // หาก config ไม่ถูกส่งมาหรือไม่มี projectId ให้สร้าง config ขั้นต่ำ
         if (!firebaseConfig || !firebaseConfig.projectId) {
             firebaseConfig = {
-                projectId: PROJECT_ID,
+                // ใช้ค่าเริ่มต้นหรือค่าที่อนุมานได้
+                projectId: DEFAULT_PROJECT_ID, 
                 databaseURL: DB_URL,
                 apiKey: "", 
             };
@@ -93,7 +96,7 @@
     } catch (e) {
         // Fallback สำหรับข้อผิดพลาดในการ Parse JSON
         firebaseConfig = {
-            projectId: PROJECT_ID,
+            projectId: DEFAULT_PROJECT_ID,
             databaseURL: DB_URL,
             apiKey: "", 
         };
