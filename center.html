@@ -6,273 +6,222 @@
     <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
-        .header{position:fixed;top:0;left:0;right:0;height:50px;background:#0a0a0a;border-bottom:5px solid #c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#c41e3a}
-        .sidebar{position:fixed;top:50px;left:0;bottom:0;width:420px;background:#0c0c1f;z-index:999;overflow-y:auto;padding:10px;border-right:5px solid #c41e3a}
 
-        .stats-bar{background:#c41e3a;border-radius:10px;padding:10px;margin-bottom:10px;text-align:center;font-weight:700;font-size:0.95rem}
-        .filter-bar{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
-        .filter-btn{padding:8px 12px;border-radius:30px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all .2s}
-        .filter-btn.active{background:#c41e3a;border-color:#c41e3a;box-shadow:0 0 15px rgba(196,30,58,0.6)}
+        .header{
+            position:fixed;top:0;left:0;right:0;height:58px;background:#c41e3a;
+            z-index:1000;display:flex;align-items:center;justify-content:center;
+            font-size:1.6rem;font-weight:800;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.6);
+        }
 
-        /* การ์ดเล็กสุด ๆ แต่ยังสวยและอ่านง่าย */
+        .sidebar{
+            position:fixed;top:58px;left:0;bottom:0;width:480px;
+            background:#0c0c0c;border-right:6px solid #c41e3a;
+            overflow-y:auto;padding:10px;z-index:999;
+        }
+
+        .stats{
+            display:flex;gap:12px;margin-bottom:12px;padding:5px 0;overflow-x:auto;
+        }
+        .stat{
+            min-width:100px;padding:12px;background:#1a1a1a;border-radius:12px;text-align:center;
+            border:2px solid #444;box-shadow:0 4px 15px rgba(0,0,0,0.5);
+        }
+        .stat-num{font-size:1.9rem;font-weight:800;}
+        .stat-label{font-size:0.85rem;margin-top:4px;}
+
         .case{
-            background:rgba(255,255,255,0.07);
-            border-radius:10px;
-            padding:10px;
-            margin-bottom:8px;
-            cursor:pointer;
-            transition:all .2s;
-            border-left:3px solid transparent;
-            font-size:0.92rem;
+            background:#1f1f1f;border-left:5px solid #555;
+            border-radius:0 12px 12px 0;padding:12px;margin-bottom:8px;
+            cursor:pointer;transition:.25s;position:relative;
         }
-        .case:hover{background:rgba(255,255,255,0.12)}
-        .case.active{background:rgba(196,30,58,0.25);border-left-color:#c41e3a}
-        .case.new{animation:newCase .8s 2}
-        @keyframes newCase{0%,100%{border-left-color:transparent}50%{border-left-color:#c41e3a;border-left-width:6px}}
+        .case:hover{background:#2a2a2a;transform:translateX(6px);}
+        .case.active{border-left-color:#c41e3a;background:#2f181b !important;box-shadow:0 0 20px rgba(196,30,58,0.6);}
+        .case.new{animation:glow 1.5s infinite alternate;}
 
-        .case-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-        .case-name{font-weight:700;font-size:1rem}
-        .priority{width:26px;height:26px;border-radius:50%;background:#c41e3a;color:#fff;font-size:0.75rem;font-weight:bold;display:flex;align-items:center;justify-content:center}
-        .priority.low{background:#27ae60}.priority.med{background:#e67e22}.priority.high{background:#c41e3a}.priority.critical{background:#000;border:2px solid #c41e3a;color:#c41e3a}
+        .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+        .req{font-weight:700;color:#c41e3a;font-size:1.05rem;}
+        .time{font-size:0.82rem;color:#aaa;}
 
-        .case-phone{margin:3px 0;font-size:0.9rem;color:#0ff}
-        .tags{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
-        .tag{padding:3px 8px;border-radius:15px;font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:4px}
-        .tag i{font-size:0.8rem}
-        .tag.food{background:#27ae60}.tag.trapped{background:#e74c3c}.tag.child{background:#9b59b6}
-        .tag.elderly{background:#f39c12}.tag.med{background:#e67e22}.tag.pet{background:#3498db}
-        .tag.drowning{background:#c41e3a;color:#fff;animation:pulse 2s infinite}
-        .tag.death{background:#000;color:#fff;border:1px solid #c41e3a}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+        .mid{display:flex;align-items:center;gap:12px;margin:6px 0;overflow:hidden;}
+        .name{font-weight:600;font-size:0.98rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .need{flex:1;font-size:0.9rem;color:#ffeb3b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-        .case-note{margin:5px 0;padding:6px;background:rgba(255,255,255,0.08);border-radius:6px;font-size:0.82rem;color:#ddd}
-        .no-location-notice{padding:6px;background:rgba(231,76,60,0.2);border-radius:6px;text-align:center;font-size:0.8rem;color:#e74c3c}
-
-        .case-footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.8rem}
-        .case-time{color:#aaa;background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:15px}
-        .status-btn{padding:5px 10px;border:none;border-radius:20px;color:#fff;font-size:0.78rem;font-weight:600;cursor:pointer}
-        .status-btn.pending{background:#e74c3c}.status-btn.going{background:#2980b9}
-        .status-btn.acknowledged{background:#e67e22}.status-btn.completed{background:#27ae60}
-
-        /* Popup บน Marker – เล็กลง อ่านง่าย */
-        .leaflet-popup-content-wrapper{
-            background:rgba(10,10,25,0.98)!important;color:#fff!important;
-            border-radius:14px!important;border:3px solid #c41e3a!important;
-            box-shadow:0 8px 30px rgba(196,30,58,0.7)!important;
-            max-width:300px!important;
+        .actions{
+            display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;
         }
-        .leaflet-popup-content{margin:14px!important;padding:0!important;line-height:1.5;font-size:0.95rem}
-        .popup-name{font-size:1.35rem;font-weight:800;color:#c41e3a;text-align:center;margin-bottom:8px}
-        .popup-priority{display:block;text-align:center;margin:8px 0;padding:6px 12px;border-radius:25px;background:#c41e3a;color:#fff;font-weight:bold;font-size:0.9rem}
-        .popup-phone{text-align:center;margin:10px 0}
-        .popup-phone a{color:#0ff;font-weight:bold;text-decoration:none;padding:6px 12px;background:rgba(0,255,255,0.15);border-radius:20px}
-        .popup-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
-        .popup-tag{padding:6px 10px;border-radius:20px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;gap:6px}
-        .popup-tag i{font-size:1rem}
-        .popup-note{background:rgba(255,255,255,0.1);padding:8px;border-radius:8px;margin:10px 0;font-size:0.9rem}
-        .popup-time{text-align:center;color:#aaa;font-size:0.85rem;margin:8px 0}
-        .popup-nav-btn{
-            background:#c41e3a;color:#fff;border:none;width:100%;padding:14px;font-size:1.1rem;
-            font-weight:800;border-radius:0 0 11px 11px;cursor:pointer;margin-top:10px
+        .btn{
+            padding:6px 11px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;
         }
-        .leaflet-popup-tip{background:#c41e3a!important}
+        .btn-phone{background:#0f0;color:#000;}
+        .btn-nav{background:#c41e3a;}
+        .btn-status{background:#e67e22;}
+        .status-tag{padding:4px 10px;border-radius:12px;font-size:0.78rem;font-weight:700;color:#fff;}
 
-        .tiny-marker div{background:var(--color)!important;width:15px!important;height:15px!important;border:3px solid #fff!important;border-radius:50%!important}
-        .tiny-marker.active div{transform:scale(2.5)!important}
-        .tiny-marker.new div{animation:blink 1.2s infinite}
-        @keyframes blink{0%,100%{transform:scale(1)}50%{transform:scale(3.5)}}
+        @keyframes glow{from{box-shadow:0 0 10px #c41e3a} to{box-shadow:0 0 25px #c41e3a}}
     </style>
 </head>
 <body>
+
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
+
 <div class="sidebar">
-    <div class="stats-bar" id="stats">กำลังโหลด...</div>
-    <div class="filter-bar">
-        <div class="filter-btn active" data-filter="all">ทั้งหมด</div>
-        <div class="filter-btn" data-filter="pending">รอช่วยเหลือ</div>
-        <div class="filter-btn" data-filter="going">กำลังไป</div>
-        <div class="filter-btn" data-filter="acknowledged">รับทราบแล้ว</div>
-        <div class="filter-btn" data-filter="completed">เสร็จสิ้น</div>
-    </div>
+    <div class="stats" id="stats"></div>
     <div id="list"></div>
 </div>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script>
-    const map = L.map('map').setView([13.94678, 100.56125], 11);
+    const map = L.map('map').setView([13.75, 100.5], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const markers = {}; const cards = {}; const list = document.getElementById('list');
-    const statsEl = document.getElementById('stats'); const notified = new Set();
-    let currentFilter = 'all';
+    const cluster = L.markerClusterGroup({maxClusterRadius: 50});
+    map.addLayer(cluster);
+
+    const list = document.getElementById('list');
+    const statsEl = document.getElementById('stats');
+    const cards = {};
+    const notified = new Set();
+
     const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
-    const statusMap = { pending:'รอช่วยเหลือ', going:'กำลังไป', acknowledged:'รับทราบแล้ว', completed:'เสร็จสิ้น', canceled:'ยกเลิก' };
 
-    function formatTime(t) {
-        const d = new Date(t);
-        const diff = Math.floor((Date.now() - d) / 60000);
-        const ago = diff < 1 ? 'สักครู่' : diff < 60 ? `${diff} นาที` : diff < 1440 ? `${Math.floor(diff/60)} ชม.` : `${Math.floor(diff/1440)} วัน`;
-        return `${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} • ${ago}ที่แล้ว`;
+    function formatTime(ts){
+        const m = Math.floor((Date.now() - ts)/60000);
+        return m < 1 ? 'สักครู่' : m < 60 ? m+' น.' : m < 1440 ? Math.floor(m/60)+' ชม.' : Math.floor(m/1440)+' วัน';
     }
 
-    function getColor(r) {
-        if (r.types?.some(t=>/เสียชีวิต|ศพ/.test(t))) return '#000';
-        if (r.status==='completed') return '#27ae60';
-        if (r.status==='going') return '#2980b9';
-        if (r.status==='acknowledged') return '#e67e22';
-        if (r.priority>=5 || r.types?.some(t=>/จมน้ำ/.test(t))) return '#c41e3a';
-        return '#e74c3c';
-    }
-
-    function getTag(t) {
-        if (/อาหาร|น้ำ/.test(t)) return {i:'utensils', txt:'อาหาร', c:'food'};
-        if (/ติดอยู่|ชั้น/.test(t)) return {i:'home', txt:'ติดอยู่', c:'trapped'};
-        if (/เด็ก/.test(t)) return {i:'child', txt:'เด็ก', c:'child'};
-        if (/สูงอายุ|ผู้สูง/.test(t)) return {i:'wheelchair', txt:'สูงอายุ', c:'elderly'};
-        if (/ยา|เวช/.test(t)) return {i:'pills', txt:'ยา', c:'med'};
-        if (/สัตว์เลี้ยง/.test(t)) return {i:'paw', txt:'สัตว์', c:'pet'};
-        if (/จมน้ำ/.test(t)) return {i:'water', txt:'จมน้ำ!!', c:'drowning'};
-        if (/เสียชีวิต|ศพ/.test(t)) return {i:'skull-crossbones', txt:'เสียชีวิต', c:'death'};
-        return {i:'hands-helping', txt:t.slice(0,8), c:''};
-    }
-
-    function getPriorityClass(p) {
-        if (!p) return 'med';
-        return p >= 7 ? 'critical' : p >= 5 ? 'high' : p >= 3 ? 'med' : 'low';
-    }
-
-    function updateStats(c) {
-        statsEl.innerHTML = `ทั้งหมด ${c.all} • รอ ${c.pending} • ไป ${c.going} • รับทราบ ${c.acknowledged} • เสร็จ ${c.completed}`;
-    }
-
-    function filterCases(f) {
-        currentFilter = f;
-        document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
-        document.querySelectorAll('.case').forEach(c=>c.style.display=(f==='all'||c.dataset.status===f)?'block':'none');
-        Object.keys(markers).forEach(id=> {
-            const m = markers[id]; const s = m.options.status || 'pending';
-            (f==='all'||s===f) ? m.addTo(map) : map.removeLayer(m);
-        });
-    }
-
-    function highlight(id) {
-        document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
-        document.querySelectorAll('.tiny-marker').forEach(m=>m.classList.remove('active'));
-        cards[id]?.classList.add('active');
-        markers[id]?._icon?.classList.add('active');
-        cards[id]?.scrollIntoView({behavior:'smooth',block:'nearest'});
-    }
-
-    async function load() {
-        let data = {};
-        try { data = await (await fetch(DB_URL + '?t=' + Date.now())).json() || {}; }
-        catch { list.innerHTML = '<div style="text-align:center;padding:80px;color:#f66">เชื่อมต่อไม่ได้<br><button onclick="location.reload()" style="margin-top:15px;background:#c41e3a;padding:10px 25px;border:none;border-radius:30px;color:#fff">รีเฟรช</button></div>'; return; }
-
-        if (!Object.keys(data).length) {
-            list.innerHTML = '<div style="text-align:center;padding:100px;color:#888">ยังไม่มีคำขอช่วยเหลือ</div>';
-            updateStats({all:0,pending:0,going:0,acknowledged:0,completed:0});
-            return;
-        }
-
-        const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
-        const newIds = new Set();
-        const fragment = document.createDocumentFragment();
-        const sorted = Object.entries(data).sort(([,a],[,b])=>b.timestamp-a.timestamp);
-        const keys = new Set(Object.keys(data));
-
-        sorted.forEach(([id, r]) => {
-            const status = r.status || 'pending';
-            const color = getColor(r);
-            const hasLoc = r.location?.lat && r.location?.lng;
-
-            counts.all++; counts[status]++;
-            if (status==='pending' && !notified.has(id)) {
-                notified.add(id); newIds.add(id);
-                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-loop-2979.mp3').play().catch(()=>{});
-                navigator.vibrate?.([200,100,200]);
-            }
-
-            // Card เล็ก
-            let card = cards[id] || document.createElement('div');
-            card.className = 'case' + (newIds.has(id)?' new':'');
-            card.dataset.status = status;
-            card.onclick = () => { highlight(id); if(hasLoc) { map.setView([r.location.lat, r.location.lng], 17); markers[id].openPopup(); }};
-            if (!cards[id]) cards[id] = card;
-
-            let tags = '';
-            if (r.types?.length) r.types.forEach(t => { const tg = getTag(t); tags += `<span class="tag ${tg.c}"><i class="fas fa-${tg.i}"></i>${tg.txt}</span>`; });
-            else tags = '<span class="tag"><i class="fas fa-hands-helping"></i>ทั่วไป</span>';
-
-            card.innerHTML = `
-                <div class="case-top"><div class="case-name">${r.name||'ไม่ระบุ'}</div><div class="priority ${getPriorityClass(r.priority)}">P${r.priority||'?'}</div></div>
-                ${r.phone ? `<div class="case-phone">${r.phone}</div>` : ''}
-                <div class="tags">${tags}</div>
-                ${r.note ? `<div class="case-note">${r.note}</div>` : ''}
-                ${!hasLoc ? '<div class="no-location-notice">ไม่มีพิกัด</div>' : ''}
-                <div class="case-footer"><div class="case-time">${formatTime(r.timestamp)}</div>
-                    <button class="status-btn ${status}" onclick="event.stopPropagation();changeStatus('${id}','${status}')">${statusMap[status]}</button>
-                </div>
-            `;
-            fragment.appendChild(card);
-
-            // Marker + Popup เล็ก
-            if (hasLoc) {
-                const icon = L.divIcon({className:'tiny-marker'+(newIds.has(id)?' new':''), html:`<div style="--color:${color}"></div>`, iconSize:[15,15]});
-                if (!markers[id]) markers[id] = L.marker([r.location.lat, r.location.lng], {icon, status}).addTo(map);
-                else { markers[id].setIcon(icon); markers[id].options.status = status; markers[id].setLatLng([r.location.lat, r.location.lng]); }
-
-                const popupHTML = `
-                    <div class="popup-name">${r.name||'ไม่ระบุชื่อ'}</div>
-                    <div class="popup-priority ${getPriorityClass(r.priority)}">P${r.priority||'?'}</div>
-                    ${r.phone ? `<div class="popup-phone"><a href="tel:${r.phone}">โทร ${r.phone}</a></div>` : ''}
-                    <div class="popup-tags">${tags}</div>
-                    ${r.note ? `<div class="popup-note">${r.note}</div>` : ''}
-                    <div class="popup-time">${formatTime(r.timestamp)}</div>
-                    <button class="popup-nav-btn" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}&travelmode=driving')">
-                        นำทางด่วน
-                    </button>
-                `;
-                markers[id].bindPopup(popupHTML, {closeButton:false, autoClose:false, maxWidth:300});
-                markers[id].off('click').on('click', () => { markers[id].openPopup(); map.setView([r.location.lat, r.location.lng], 17); highlight(id); });
-                if (newIds.has(id)) setTimeout(() => { map.setView([r.location.lat, r.location.lng], 17); markers[id].openPopup(); }, 600);
-            } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
-        });
-
-        Object.keys(cards).forEach(id => !keys.has(id) && (cards[id].remove(), delete cards[id], notified.delete(id), markers[id] && (map.removeLayer(markers[id]), delete markers[id])));
-        list.innerHTML = ''; list.appendChild(fragment);
-        updateStats(counts); filterCases(currentFilter);
-    }
-
-    function changeStatus(id, cur) {
+    function changeStatus(id, current){
         const menu = document.createElement('div');
-        menu.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:25px;border:4px solid #c41e3a;border-radius:14px;z-index:99999;width:300px;text-align:center';
-        menu.innerHTML = '<h3 style="color:#c41e3a;margin-bottom:15px">เปลี่ยนสถานะ</h3>';
-        ['pending','going','acknowledged','completed','canceled'].forEach(s => {
-            if (s===cur) return;
+        menu.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:99999;display:flex;align-items:center;justify-content:center';
+        const box = document.createElement('div');
+        box.style = 'background:#111;padding:25px;border:5px solid #c41e3a;border-radius:15px;width:90%;max-width:380px;text-align:center';
+        box.innerHTML = '<h3 style="color:#c41e3a;margin-bottom:20px">เปลี่ยนสถานะ</h3>';
+        ['pending','going','acknowledged','completed'].forEach(s=>{
+            if(s===current) return;
             const b = document.createElement('button');
-            b.textContent = statusMap[s];
-            b.style.cssText = `background:${s==='pending'?'#e74c3c':s==='going'?'#2980b9':s==='acknowledged'?'#e67e22':s==='completed'?'#27ae60':'#666'};color:#fff;border:none;padding:12px;margin:5px 0;width:100%;border-radius:30px;font-weight:bold;cursor:pointer`;
-            b.onclick = () => fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`, {method:'PUT', body:JSON.stringify(s)})
-                .then(() => { load(); menu.remove(); });
-            menu.appendChild(b);
+            b.textContent = s==='pending'?'รอช่วย':s==='going'?'กำลังไป':s==='acknowledged'?'รับทราบ':'เสร็จสิ้น';
+            b.style = `display:block;width:100%;margin:10px 0;padding:14px;border:none;border-radius:10px;color:#fff;font-weight:700;background:${s==='completed'?'#27ae60':s==='going'?'#3498db':s==='acknowledged'?'#f39c12':'#e74c3c'};cursor:pointer`;
+            b.onclick = ()=>{
+                fetch(`https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests/${id}/status.json`,{
+                    method:'PUT',body:JSON.stringify(s)
+                }).then(()=>{ load(); menu.remove(); });
+            };
+            box.appendChild(b);
         });
         const close = document.createElement('button');
-        close.textContent = 'ปิด'; close.style.cssText = 'margin-top:15px;background:#444;color:#fff;padding:10px 30px;border:none;border-radius:30px;cursor:pointer';
-        close.onclick = () => menu.remove();
-        menu.appendChild(close);
+        close.textContent = 'ปิด';
+        close.style = 'margin-top:20px;padding:12px 40px;background:#555;color:#fff;border:none;border-radius:10px;cursor:pointer';
+        close.onclick = ()=>menu.remove();
+        box.appendChild(close);
+        menu.appendChild(box);
         document.body.appendChild(menu);
     }
     window.changeStatus = changeStatus;
 
-    document.querySelectorAll('.filter-btn').forEach(b=>b.addEventListener('click',()=>filterCases(b.dataset.filter)));
+    async function load(){
+        let data = {};
+        try{ data = await (await fetch(DB_URL+'?t='+Date.now())).json() || {}; }
+        catch{ list.innerHTML='<div style="text-align:center;padding:120px;color:#f66">เชื่อมต่อไม่ได้</div>'; return; }
+
+        const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
+        const frag = document.createDocumentFragment();
+        cluster.clearLayers();
+
+        const sorted = Object.entries(data).sort((a,b)=> b[1].timestamp - a[1].timestamp);
+
+        sorted.forEach(([id,r])=>{
+            const s = r.status || 'pending';
+            counts.all++; counts[s]++;
+
+            const hasLoc = r.location?.lat && r.location?.lng;
+            const reqId = r.requestId || id.slice(-10).toUpperCase();
+            const name = (r.name || r.fullname || 'ไม่ระบุชื่อ').trim();
+            const types = (r.types || []).join(', ') || 'ทั่วไป';
+
+            const card = document.createElement('div');
+            card.className = `case${s==='pending' && !notified.has(id)?' new':''}`;
+            card.dataset.status = s;
+
+            card.innerHTML = `
+                <div class="top">
+                    <div class="req">#${reqId}</div>
+                    <div class="time">${formatTime(r.timestamp)}</div>
+                </div>
+                <div class="mid">
+                    <div class="name">${name}</div>
+                    <div class="need">${types}</div>
+                </div>
+                <div class="actions">
+                    ${r.phone?`<button class="btn btn-phone" onclick="event.stopPropagation();location.href='tel:${r.phone}'">โทร ${r.phone}</button>`:''}
+                    ${hasLoc?`<button class="btn btn-nav" onclick="event.stopPropagation();window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')">นำทาง</button>`:''}
+                    <button class="btn btn-status" onclick="event.stopPropagation();changeStatus('${id}','${s}')">เปลี่ยนสถานะ</button>
+                    <span class="status-tag ${s}">${s==='pending'?'รอช่วย':s==='going'?'กำลังไป':s==='acknowledged'?'รับทราบ':'เสร็จ'}</span>
+                </div>
+            `;
+
+            card.onclick = () => {
+                document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
+                card.classList.add('active');
+                if(hasLoc) map.setView([r.location.lat, r.location.lng], 18);
+            };
+
+            if(s==='pending' && !notified.has(id)){
+                notified.add(id);
+                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-loop-2979.mp3').play().catch(()=>{});
+                navigator.vibrate?.([300,100,300]);
+            }
+
+            frag.appendChild(card);
+            cards[id] = card;
+
+            // ===== สำคัญ: แก้สี่เหลี่ยมซ้อน =====
+            if(hasLoc){
+                const color = s==='completed'?'#27ae60':(r.priority>=5 || (r.types&&r.types.some(t=>/จมน้ำ/.test(t)))?'#c41e3a':'#e74c3c');
+                const icon = L.divIcon({
+                    html: `<div style="background:${color};width:16px;height:16px;border-radius:50%;border:3.5px solid #fff;box-shadow:0 0 12px #000;"></div>`,
+                    className: '',              // เคลียร์พื้นหลังของ Leaflet
+                    iconSize: [23, 23],
+                    iconAnchor: [11.5, 11.5]
+                });
+
+                const m = L.marker([r.location.lat, r.location.lng], {icon});
+                m.bindPopup(`
+                    <b style="color:#c41e3a">#${reqId}</b><br>
+                    <b>${name}</b><br>
+                    ${r.phone?`โทร: <a href="tel:${r.phone}" style="color:#0ff">${r.phone}</a><br>`:''}
+                    ${types}<br>${r.note||''}<br><br>
+                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${r.location.lat},${r.location.lng}')" 
+                            style="width:100%;padding:11px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold">
+                        นำทางด่วน
+                    </button>
+                `,{maxWidth:300});
+                cluster.addLayer(m);
+            }
+        });
+
+        Object.keys(cards).forEach(k=>{ if(!data[k]){ cards[k].remove(); delete cards[k]; }});
+
+        list.innerHTML = ''; 
+        list.appendChild(frag);
+
+        statsEl.innerHTML = `
+            <div class="stat"><div class="stat-num">${counts.all}</div><div class="stat-label">ทั้งหมด</div></div>
+            <div class="stat" style="border-color:#e74c3c"><div class="stat-num">${counts.pending}</div><div class="stat-label">รอช่วย</div></div>
+            <div class="stat" style="border-color:#3498db"><div class="stat-num">${counts.going}</div><div class="stat-label">กำลังไป</div></div>
+            <div class="stat" style="border-color:#27ae60"><div class="stat-num">${counts.completed}</div><div class="stat-label">เสร็จแล้ว</div></div>
+        `;
+    }
+
     load();
-    setInterval(load, 6000);
-    setTimeout(()=>map.invalidateSize(),400);
+    setInterval(load, 7000);
+    setTimeout(()=>map.invalidateSize(), 500);
 </script>
 </body>
 </html>
