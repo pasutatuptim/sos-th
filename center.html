@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
+        body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden;position:relative}
         #map{height:100vh;width:100%}
         .header{position:fixed;top:0;left:0;right:0;height:55px;background:#c41e3a;z-index:1000;
             display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;
@@ -29,6 +29,16 @@
         .pending .stat-num{color:#e74c3c;}
         .going .stat-num{color:#2980b9;}
         .completed .stat-num{color:#27ae60;}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+        .blink{animation:blink .6s ease-in-out 4}
+
+        #alertBar{
+            position:fixed;top:55px;left:0;right:0;height:0;background:#e74c3c;color:#fff;
+            font-weight:900;font-size:1.5rem;text-align:center;padding:0 20px;
+            display:flex;align-items:center;justify-content:center;z-index:9999;overflow:hidden;
+            transition:height .7s cubic-bezier(0.68,-0.55,0.27,1.55);box-shadow:0 10px 30px rgba(231,76,60,0.8);
+        }
+        #alertBar.show{height:70px}
 
         .case{background:#fff;color:#222;border-radius:12px;margin-bottom:11px;
             box-shadow:0 4px 15px rgba(0,0,0,0.4);cursor:pointer;transition:all .25s;
@@ -40,6 +50,7 @@
         .case.completed {border-left-color:#27ae60;}
         .case:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
         .case.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
+        .case.new{border-left:12px solid #ff1744 !important;animation:blink 1s infinite alternate;}
         .case-header{padding:13px 16px 8px;background:rgba(0,0,0,0.04);}
         .req-id{font-size:1.35rem;font-weight:800;color:#c41e3a;}
         .case-body{padding:0 16px 14px;}
@@ -53,8 +64,7 @@
         .status-line.acknowledged {background:#fff4e5;border-left-color:#e67e22;color:#d35400;}
         .status-line.completed {background:#eaf7ec;border-left-color:#27ae60;color:#1e8449;}
         .note-line{background:#ffebee;padding:12px 14px;border-radius:10px;margin:10px 0;
-            border-left:6px solid #e74c3c;color:#c41e3a;font-weight:700;font-size:1rem;
-            background:linear-gradient(90deg,#ffebee,#fff5f5);}
+            border-left:6px solid #e74c3c;color:#c41e3a;font-weight:700;font-size:1rem;}
         .status-btns{display:flex;gap:7px;margin-top:10px;}
         .status-btn{flex:1;padding:11px 6px;font-size:0.88rem;font-weight:700;
             border-radius:10px;border:none;cursor:pointer;color:#fff;}
@@ -67,6 +77,7 @@
 </head>
 <body>
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
+<div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
 
 <div class="sidebar">
     <div class="stats">
@@ -82,6 +93,8 @@
 </div>
 <div id="map"></div>
 
+<audio id="alertSound" src="https://cdn.jsdelivr.net/gh/napsterking/alert-sound@master/alert.mp3" preload="auto"></audio>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script>
@@ -92,13 +105,9 @@
     const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
     const statusName = { pending:'รอช่วย', going:'กำลังไป', acknowledged:'รับทราบ', completed:'เสร็จสิ้น' };
 
-    const sosMarkers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        maxClusterRadius: 70,
-        iconCreateFunction: function(cluster) {
-            let highest = 0;
-            let color = '#e74c3c';
+    const sosMarkers = L.markerClusterGroup({ spiderfyOnMaxZoom:true, showCoverageOnHover:false, maxClusterRadius:70,
+        iconCreateFunction: cluster => {
+            let highest = 0, color = '#e74c3c';
             cluster.getAllChildMarkers().forEach(m => {
                 const p = priority[m.options.status] || 0;
                 if (p > highest) { highest = p; color = statusColor[m.options.status]; }
@@ -116,13 +125,15 @@
     });
 
     const rescueMarkers = L.layerGroup();
-    map.addLayer(sosMarkers);
-    map.addLayer(rescueMarkers);
+    map.addLayer(sosMarkers); map.addLayer(rescueMarkers);
 
     const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
-    const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
     const list = document.getElementById('list');
+    const alertBar = document.getElementById('alertBar');
+    const alertSound = document.getElementById('alertSound');
+    const pendingEl = document.getElementById('countPending');
     let currentFilter = 'all';
+    let previousIds = new Set();
 
     function applyFilter() {
         document.querySelectorAll('.case').forEach(c => {
@@ -137,24 +148,28 @@
         return `${Math.floor(diff/1440)} วัน`;
     }
 
+    function triggerAlert(reqId, name, note){
+        alertBar.textContent = `มีเคสใหม่ด่วน! #${reqId} – ${name}${note?` – ${note}`:''}`;
+        alertBar.classList.add('show');
+        alertSound.play().catch(()=>{});
+        pendingEl.classList.add('blink');
+        setTimeout(()=>{ alertBar.classList.remove('show'); pendingEl.classList.remove('blink'); }, 10000);
+    }
+
     async function loadAll(){
         let data = {};
-        try { 
-            const res = await fetch(SOS_DB+'.json?t='+Date.now());
-            data = await res.json() || {}; 
-        }
-        catch(e) { 
-            list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้<br>กรุณาตรวจสอบอินเทอร์เน็ต</div>'; 
-            return; 
-        }
+        try { data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json() || {}; }
+        catch(e) { list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้</div>'; return; }
 
         const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
         const frag = document.createDocumentFragment();
-        sosMarkers.clearLayers();
+        const currentIds = new Set();
+        let newestCase = null;
 
         Object.entries(data).sort((a,b)=> (b[1].timestamp||0) - (a[1].timestamp||0)).forEach(([id,r])=>{
             const status = r.status || 'pending';
             counts.all++; counts[status]++;
+            currentIds.add(id);
 
             const lat = r.location?.lat;
             const lng = r.location?.lng;
@@ -163,45 +178,48 @@
             const timeAgo = formatTime(r.timestamp);
             const note = r.note ? r.note.trim() : '';
 
-            // การ์ดใน Sidebar — เพิ่ม Note เด่นมาก
+            // ตรวจจับเคสใหม่
+            if (!previousIds.has(id) && status === 'pending') {
+                newestCase = {id, reqId, lat, lng, name: r.name||r.fullname||'ไม่ระบุ', note};
+                triggerAlert(reqId, newestCase.name, note);
+            }
+
             const card = document.createElement('div');
-            card.className = `case ${status}`;
+            card.className = `case ${status}${newestCase && newestCase.id===id ? ' new' : ''}`;
             card.dataset.status = status;
-            let noteHTML = note ? `<div class="note-line">หมายเหตุ: ${note}</div>` : '';
+            const noteHTML = note ? `<div class="note-line">หมายเหตุ: ${note}</div>` : '';
             card.innerHTML = `
                 <div class="case-header"><div class="req-id">#${reqId}</div></div>
                 <div class="case-body">
-                    <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name || r.fullname || 'ไม่ระบุ'}</span></div>
-                    <div class="line"><span class="label">ต้องการ:</span><span class="value">${(r.types||[]).join(', ') || '-'}</span></div>
+                    <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name||r.fullname||'ไม่ระบุ'}</span></div>
+                    <div class="line"><span class="label">ต้องการ:</span><span class="value">${(r.types||[]).join(', ')||'-'}</span></div>
                     <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo}ที่แล้ว</span></div>
                     ${noteHTML}
                     <div class="status-line ${status}">สถานะ: ${statusName[status]}</div>
                     <div class="status-btns">
-                        <button class="status-btn btn-pending ${status==='pending'?'active':''}" onclick="event.stopPropagation(); confirmStatus('${id}','pending')">รอช่วย</button>
-                        <button class="status-btn btn-going ${status==='going'?'active':''}" onclick="event.stopPropagation(); confirmStatus('${id}','going')">กำลังไป</button>
-                        <button class="status-btn btn-ack ${status==='acknowledged'?'active':''}" onclick="event.stopPropagation(); confirmStatus('${id}','acknowledged')">รับทราบ</button>
-                        <button class="status-btn btn-done ${status==='completed'?'active':''}" onclick="event.stopPropagation(); confirmStatus('${id}','completed')">เสร็จสิ้น</button>
+                        <button class="status-btn btn-pending ${status==='pending'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','pending')">รอช่วย</button>
+                        <button class="status-btn btn-going ${status==='going'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','going')">กำลังไป</button>
+                        <button class="status-btn btn-ack ${status==='acknowledged'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','acknowledged')">รับทราบ</button>
+                        <button class="status-btn btn-done ${status==='completed'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','completed')">เสร็จสิ้น</button>
                     </div>
                 </div>
             `;
-            card.onclick = (e) => {
+            card.onclick = e => {
                 if(e.target.tagName==='BUTTON') return;
                 document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
                 card.classList.add('active');
-                if(hasLoc) map.setView([lat,lng], 18);
+                if(hasLoc) map.setView([lat,lng],18);
             };
             frag.appendChild(card);
 
-            // Marker วงกลม + Popup แสดง Note ชัดเจน
             if(hasLoc){
                 const icon = L.divIcon({
                     html: `<div style="background:${statusColor[status]};width:38px;height:38px;border-radius:50%;
                             border:5px solid #fff;box-shadow:0 4px 15px rgba(0,0,0,0.6);"></div>`,
                     className: '', iconSize: [48,48], iconAnchor: [24,24]
                 });
-
                 const m = L.marker([lat,lng], {icon, status});
-                let notePopup = note ? `<br><b style="color:#e74c3c;">หมายเหตุ: ${note}</b>` : '';
+                const notePopup = note ? `<br><b style="color:#e74c3c;">หมายเหตุ: ${note}</b>` : '';
                 m.bindPopup(`
                     <b style="font-size:1.4rem;color:#c41e3a">#${reqId}</b><br>
                     <b>ชื่อ:</b> ${r.name||r.fullname||'-'}<br>
@@ -211,11 +229,16 @@
                     <b>สถานะ:</b> ${statusName[status]}<br>
                     <b>รับแจ้ง:</b> ${timeAgo}ที่แล้ว<br><br>
                     <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${lat},${lng}')"
-                        style="width:100%;padding:12px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">
+                        style="width:100%;padding:12px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold">
                         นำทางด่วน
                     </button>
                 `,{maxWidth:360});
                 sosMarkers.addLayer(m);
+
+                if(newestCase && newestCase.id===id){
+                    setTimeout(()=>{ map.setView([lat,lng],18); m.openPopup(); }, 1000);
+                    setTimeout(()=>{ card.scrollIntoView({behavior:"smooth",block:"center"}); }, 1200);
+                }
             }
         });
 
@@ -224,32 +247,30 @@
         document.getElementById('countGoing').textContent = counts.going;
         document.getElementById('countCompleted').textContent = counts.completed;
 
-        list.innerHTML = ''; 
-        list.appendChild(frag);
+        list.innerHTML=''; list.appendChild(frag);
         applyFilter();
+        previousIds = currentIds;
     }
 
-    function confirmStatus(id, newStatus){
+    function confirmStatus(id,newStatus){
         if(confirm(`เปลี่ยนเป็น "${statusName[newStatus]}" ใช่หรือไม่?`)){
-            fetch(`${SOS_DB}/${id}.json`, {
-                method: 'PATCH',
-                body: JSON.stringify({status: newStatus, updatedAt: Date.now()})
-            }).then(()=>loadAll());
+            fetch(`${SOS_DB}/${id}.json`,{method:'PATCH',body:JSON.stringify({status:newStatus,updatedAt:Date.now()})})
+            .then(()=>loadAll());
         }
     }
 
-    document.querySelectorAll('.stat-item').forEach(item => {
-        item.onclick = () => {
-            document.querySelectorAll('.stat-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.stat-item').forEach(item=>{
+        item.onclick=()=>{
+            document.querySelectorAll('.stat-item').forEach(i=>i.classList.remove('active'));
             item.classList.add('active');
-            currentFilter = item.dataset.filter;
+            currentFilter=item.dataset.filter;
             applyFilter();
         };
     });
 
     loadAll();
-    setInterval(loadAll, 8000);
-    setTimeout(() => map.invalidateSize(), 500);
+    setInterval(loadAll,8000);
+    setTimeout(()=>map.invalidateSize(),500);
 </script>
 </body>
 </html>
