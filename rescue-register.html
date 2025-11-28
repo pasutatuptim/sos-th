@@ -324,8 +324,24 @@
 
             // Function to handle location error
             const handleGeoError = (error) => {
-                console.error("Geolocation error:", error);
-                showStatus("กรุณาเปิด GPS และอนุญาตตำแหน่งเพื่อส่งตำแหน่ง", 'error');
+                const errorMessage = error.message || "ไม่ทราบสาเหตุ";
+                const errorCode = error.code;
+                
+                // Log detailed error information for debugging
+                console.error(`Geolocation error (Code: ${errorCode}):`, errorMessage, error);
+
+                // Determine the status message for the user based on common error codes
+                let statusMessage = "กรุณาเปิด GPS และอนุญาตตำแหน่งเพื่อส่งตำแหน่ง";
+                if (errorCode === 1) { // PERMISSION_DENIED
+                    statusMessage = "ถูกปฏิเสธ: กรุณาอนุญาตให้เข้าถึงตำแหน่ง GPS ในการตั้งค่าเบราว์เซอร์";
+                } else if (errorCode === 3) { // TIMEOUT
+                    statusMessage = "หมดเวลา: ไม่พบตำแหน่ง GPS ที่ถูกต้อง ลองอยู่ในพื้นที่เปิด";
+                } else if (errorMessage !== "ไม่ทราบสาเหตุ" && errorMessage) {
+                    // Fallback to the error message if it's descriptive
+                    statusMessage = `ข้อผิดพลาด GPS: ${errorMessage}`;
+                }
+
+                showStatus(statusMessage, 'error');
                 registerButton.disabled = false;
             };
 
