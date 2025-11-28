@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนทีมกู้ภัย</title>
+    <style>
+        body{font-family: 'Sarabun', sans-serif;background:#111;color:#fff;margin:0;padding:20px;}
+        .container{max-width:480px;margin:0 auto;background:#1a1a1a;padding:30px;border-radius:20px;box-shadow:0 10px 40px rgba(196,30,58,0.3);}
+        h1{text-align:center;color:#c41e3a;margin-bottom:30px;}
+        input, select, button{
+            width:100%;padding:16px;margin:12px 0;border-radius:12px;border:none;font-size:1.1rem;
+        }
+        input, select{background:#333;color:#fff;}
+        button{background:#c41e3a;color:#fff;font-weight:bold;cursor:pointer;transition:0.3s;}
+        button:hover{background:#e74c3c;transform:scale(1.05);}
+        .status{margin-top:20px;padding:15px;background:#27ae60;border-radius:12px;text-align:center;font-weight:bold;display:none;}
+        .status.error{background:#e74c3c;}
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <h1>ลงทะเบียนทีมกู้ภัย</h1>
+    <input type="text" id="teamName" placeholder="ชื่อทีม / ชื่อหน่วย (เช่น ทีมเรือเร็ว 1)" required>
+    <input type="tel" id="phone" placeholder="เบอร์โทร (เช่น 0812345678)">
+    <select id="vehicle">
+        <option value="รถยนต์">รถยนต์กู้ภัย</option>
+        <option value="เรือ">เรือช่วยเหลือ</option>
+        <option value="รถพยาบาล">รถพยาบาล</option>
+        <option value="ดับเพลิง">รถดับเพลิง</option>
+        <option value="อาสาสมัคร">อาสาสมัครเดินเท้า</option>
+    </select>
+    <button onclick="registerTeam()">เริ่มส่งตำแหน่งเรียลไทม์</button>
+    <div id="status" class="status">กำลังบันทึก...</div>
+</div>
+
+<script>
+// เปลี่ยนชื่อโปรเจกต์ให้ตรงกับของคุณ
+const PROJECT_ID = "pasuta-sos";
+const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams`;
+
+let watchId = null;
+let teamId = localStorage.getItem("rescueTeamId");
+
+async function registerTeam() {
+    const teamName = document.getElementById("teamName").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const vehicle = document.getElementById("vehicle").value;
+
+    if (!teamName) return alert("กรุณากรอกชื่อทีม");
+
+    const statusEl = document.getElementById("status");
+    statusEl.style.display = "block";
+    statusEl.textContent = "กำลังขอตำแหน่ง...";
+    statusEl.className = "status";
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            const teamData = {
+                name: teamName,
+                phone: phone || null,
+                vehicle: vehicle,
+                lat: lat,
+                lng: lng,
+                timestamp: Date.now(),
+                active: true
+            };
+
+            try {
+                let ref;
+                if (teamId) {
+                    // อัปเดตทีมเดิม
+                    ref = await fetch(`${DB_URL}/${teamId}.json`, {
+                        method: "PATCH",
+                        body: JSON.stringify(teamData)
+                    });
+                } else {
+                    // สร้างทีมใหม่
+                    ref = await fetch(`${DB_URL}.json`, {
+                        method: "POST",
+                        body: JSON.stringify(teamData)
+                    });
+                    const result = await ref.json();
+                    teamId = result.name;
+                    localStorage.setItem("rescueTeamId", teamId);
+                }
+
+                statusEl.textContent = `ส่งตำแหน่งเรียบร้อย! ชื่อทีม: ${teamName}`;
+                statusEl.className = "status";
+
+                // เริ่มส่งตำแหน่งอัตโนมัติทุก 3 วินาที
+                if (watchId) navigator.geolocation.clearWatch(watchId);
+                watchId = navigator.geolocation.watchPosition(updateLocation, error => {
+                    statusEl.textContent = "ไม่สามารถติดตามตำแหน่งได้";
+                    statusEl.className = "status error";
+                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+
+            } catch (e) {
+                statusEl.textContent = "บันทึกไม่สำเร็จ";
+                statusEl.className = "status error";
+            }
+        }, () => {
+            statusEl.textContent = "กรุณาเปิด GPS และอนุญาตตำแหน่ง";
+            statusEl.className = "status error";
+        });
+    }
+}
+
+async function updateLocation(position) {
+    if (!teamId) return;
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : 0;
+
+    await fetch(`${DB_URL}/${teamId}.json`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            lat, lng,
+            speed: parseFloat(speed),
+            timestamp: Date.now()
+        })
+    });
+}
+
+// ถ้ามี teamId อยู่แล้ว → โหลดข้อมูลเดิมมาเติมให้
+if (teamId) {
+    fetch(`${DB_URL}/${teamId}.json`)
+        .then(r => r.json())
+        .then(data => {
+            if (data) {
+                document.getElementById("teamName").value = data.name || "";
+                document.getElementById("phone").value = data.phone || "";
+                document.getElementById("vehicle").value = data.vehicle || "รถยนต์";
+                document.getElementById("status").style.display = "block";
+                document.getElementById("status").textContent = "เชื่อมต่อแล้ว – กำลังส่งตำแหน่ง...";
+                registerTeam(); // เริ่มส่งตำแหน่งทันที
+            }
+        });
+}
+</script>
+</body>
+</html>
