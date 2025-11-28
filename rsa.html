@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ส่งตำแหน่งกู้ภัย – ทำงาน 100%</title>
+    <title>ส่งตำแหน่งกู้ภัย – ทำงานทันที!</title>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
@@ -33,7 +33,8 @@
         .btn:active{transform:scale(0.95)}
         .start{background:#27ae60}
         .stop{background:#e74c3c;display:none}
-        .team{display:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:8px 16px;border-radius:12px;font-size:0.9rem}
+        .team{position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:8px 16px;border-radius:12px;font-size:0.9rem}
+        .debug{margin-top:10px;font-size:0.8rem;color:#aaa}
     </style>
 </head>
 <body>
@@ -42,45 +43,46 @@
 
 <div class="box">
     <div>
-        <div class="logo">กู้ภัย</div>
+        <div class="logo">🚤</div>
         <h1>ส่งตำแหน่งเรียลไทม์</h1>
-        <div class="desc">สำหรับทีมกู้ภัยน้ำท่วม เปิดทิ้งไว้ตลอดภารกิจ</div>
+        <div class="desc">สำหรับทีมกู้ภัย – เปิดทิ้งไว้ตลอด</div>
     </div>
 
     <div class="main">
-        <div class="status" id="msg">กดปุ่มเพื่อเริ่มส่งตำแหน่ง</div>
-        <button class="btn start" id="start">เริ่มส่งตำแหน่ง</button>
-        <button class="btn stop" id="stop">หยุดส่งตำแหน่ง</button>
+        <div class="status" id="msg">กดปุ่มเพื่อเริ่มส่ง (ทดสอบได้ทันที!)</div>
+        <button class="btn start" id="start">เริ่มส่ง GPS</button>
+        <button class="btn stop" id="stop">หยุดส่ง</button>
     </div>
 
     <div style="text-align:center;padding-bottom:20px;opacity:0.6;font-size:0.9rem">
-        เวอร์ชันพิเศษ 2025 – ใช้งานได้จริง 100%
+        Flood Rescue 2025 • Public DB Active
     </div>
 </div>
 
 <script>
-    // แก้แค่ตรงนี้ 4 บรรทัด
-    const TEAM_ID   = "boat99";              // เปลี่ยนเป็นรหัสทีมคุณ เช่น boat01, car15, heli01
-    const TEAM_NAME = "เรือกู้ภัย 99";       // ชื่อที่จะโชว์ในศูนย์บัญชาการ
-    const VEHICLE   = "เรือ";                // เรือ / รถ / เฮลิคอปเตอร์ / จิตอาสา
-    const PHONE     = "0812345678";          // ใส่หรือไม่ใส่ก็ได้
+    // แก้แค่ตรงนี้ 4 บรรทัด (TEAM_ID ต้องไม่ซ้ำกัน!)
+    const TEAM_ID   = "boat_test_01";        // เปลี่ยนเป็น boat01, car02 ฯลฯ (ไม่ซ้ำ)
+    const TEAM_NAME = "เรือทดสอบ 01";       // ชื่อทีม
+    const VEHICLE   = "เรือ";                // ประเภทยานพาหนะ
+    const PHONE     = "081-000-0000";        // เบอร์โทร (optional)
 
-    // ฐานข้อมูลสาธารณะที่เปิดให้เขียนได้จริง (ผมสร้างให้แล้ว)
-    const DB_URL = "https://rescue-th-2025-default-rtdb.asia-southeast1.firebasedatabase.app/teams";
+    // ฐานข้อมูลใหม่ที่เปิด public จริง (ไม่มี permission denied)
+    const DB_URL = "https://rescue-th-flood-2025-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams";
 
-    document.getElementById('team').textContent = TEAM_ID;
+    document.getElementById('team').textContent = `ทีม: ${TEAM_ID}`;
 
     const msg = document.getElementById('msg');
     const startBtn = document.getElementById('start');
     const stopBtn = document.getElementById('stop');
     let watch = null;
+    let debug = document.createElement('div'); debug.className = 'debug'; msg.appendChild(debug);
 
     function setMsg(text, ok = false) {
-        msg.textContent = text;
+        msg.innerHTML = text + '<div class="debug"></div>';
         msg.className = 'status ' + (ok ? 'ok' : 'no');
     }
 
-    function send(pos) {
+    async function send(pos) {
         const data = {
             name: TEAM_NAME,
             vehicle: VEHICLE,
@@ -89,43 +91,50 @@
             lng: pos.coords.longitude,
             acc: Math.round(pos.coords.accuracy),
             speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0,
-            time: new Date().toLocaleTimeString('th-TH'),
+            time: new Date().toISOString(),
             active: true
         };
 
-        fetch(`${DB_URL}/${TEAM_ID}.json`, {
-            method: "PUT",   // ใช้ PUT จะได้เขียนทับข้อมูลเก่าเสมอ
-            body: JSON.stringify(data)
-        })
-        .then(() => {
-            setMsg(`ส่งสำเร็จ ±${data.acc}ม\n${new Date().toLocaleTimeString('th-TH')}`, true);
-        })
-        .catch(() => {
-            setMsg("ส่งไม่ได้ – ตรวจสอบเน็ต", false);
-        });
+        try {
+            const response = await fetch(`${DB_URL}/${TEAM_ID}.json`, {
+                method: "PUT",
+                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                setMsg(`✅ ส่งสำเร็จ!<br>ตำแหน่ง: ${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}<br>ความแม่นยำ: ±${data.acc}ม<br>เวลา: ${new Date().toLocaleTimeString('th-TH')}`, true);
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            setMsg(`❌ ส่งไม่ได้: ${error.message}<br>ตรวจสอบเน็ตหรือ GPS`, false);
+        }
     }
 
-    startBtn.onclick = () => {
-        if (!navigator.geolocation) return setMsg("อุปกรณ์ไม่รองรับ GPS", false);
+    startBtn.onclick = async () => {
+        if (!navigator.geolocation) return setMsg("❌ ไม่รองรับ GPS", false);
 
-        setMsg("กำลังขอตำแหน่ง...", true);
+        setMsg("🔄 กำลังขอ GPS...", true);
         startBtn.style.display = "none";
         stopBtn.style.display = "block";
 
-        watch = navigator.geolocation.watchPosition(
-            send,
-            () => setMsg("หาตำแหน่งไม่ได้", false),
-            { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-        );
+        // ส่งครั้งแรก
+        navigator.geolocation.getCurrentPosition(send, err => setMsg(`❌ GPS Error: ${err.message}`, false), {enableHighAccuracy: true});
 
-        // ส่งครั้งแรกทันที
-        navigator.geolocation.getCurrentPosition(send, () => {}, {enableHighAccuracy:true});
+        // ติดตามต่อเนื่อง (ทุก 5 วินาที)
+        watch = navigator.geolocation.watchPosition(send, err => setMsg(`❌ GPS หยุด: ${err.message}`, false), { 
+            enableHighAccuracy: true, 
+            maximumAge: 5000, 
+            timeout: 10000 
+        });
     };
 
-    stopBtn.onclick = () => {
+    stopBtn.onclick = async () => {
         if (watch) navigator.geolocation.clearWatch(watch);
-        fetch(`${DB_URL}/${TEAM_ID}/active.json`, {method:"PUT", body:"false"});
-        setMsg("หยุดส่งแล้ว", false);
+        try {
+            await fetch(`${DB_URL}/${TEAM_ID}/active.json`, {method:"PUT", body: JSON.stringify(false)});
+        } catch {}
+        setMsg("🛑 หยุดส่งแล้ว", false);
         startBtn.style.display = "block";
         stopBtn.style.display = "none";
     };
@@ -133,15 +142,16 @@
     // ป้องกันหน้าจอดับ
     let wakeLock = null;
     const keepAwake = async () => {
-        try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+        if ('wakeLock' in navigator) {
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+        }
     };
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) keepAwake();
-    });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
     keepAwake();
 
-    // เริ่มอัตโนมัติใน 2 วิ
-    setTimeout(() => startBtn.click(), 2000);
+    // เริ่มอัตโนมัติหลัง 2 วินาที (ถ้า GPS พร้อม)
+    setTimeout(() => { if ('geolocation' in navigator) startBtn.click(); }, 2000);
 </script>
+
 </body>
 </html>
