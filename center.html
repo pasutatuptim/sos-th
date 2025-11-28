@@ -32,7 +32,8 @@
 
         .case{background:#fff;color:#222;border-radius:12px;margin-bottom:11px;
             box-shadow:0 4px 15px rgba(0,0,0,0.4);cursor:pointer;transition:all .25s;
-            border-left:7px solid #ccc;}
+            border-left:7px solid #ccc;display:none;}
+        .case.show{display:block;}
         .case.pending   {border-left-color:#e74c3c;}
         .case.going     {border-left-color:#2980b9;}
         .case.acknowledged {border-left-color:#e67e22;}
@@ -66,7 +67,7 @@
 
 <div class="sidebar">
     <div class="stats">
-        <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด</div>
+        <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด (กดกรอง)</div>
         <div class="stats-grid">
             <div class="stat-item total active" data-filter="all"><div class="stat-num" id="countAll">0</div><div>ทั้งหมด</div></div>
             <div class="stat-item pending" data-filter="pending"><div class="stat-num" id="countPending">0</div><div>รอช่วย</div></div>
@@ -84,16 +85,29 @@
     const map = L.map('map').setView([13.94678, 100.56125], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+    const priority = { pending: 4, going: 3, acknowledged: 2, completed: 1 };
+    const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
+    const statusName = { pending:'รอช่วย', going:'กำลังไป', acknowledged:'รับทราบ', completed:'เสร็จสิ้น' };
+
     const sosMarkers = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
         maxClusterRadius: 70,
         iconCreateFunction: function(cluster) {
+            let highest = 0;
+            let color = '#e74c3c';
+            cluster.getAllChildMarkers().forEach(m => {
+                const p = priority[m.options.status] || 0;
+                if (p > highest) { highest = p; color = statusColor[m.options.status]; }
+            });
             return L.divIcon({
-                html: `<div style="background:#c41e3a;color:#fff;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;border:4px solid #fff;box-shadow:0 4px 15px #000;">
+                html: `<div style="background:${color}cc;width:60px;height:60px;border-radius:50%;
+                        border:4px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.6);
+                        display:flex;align-items:center;justify-content:center;
+                        font-weight:900;font-size:22px;color:#fff;">
                         ${cluster.getChildCount()}
                        </div>`,
-                className: '', iconSize: [50,50]
+                className: '', iconSize: [60,60]
             });
         }
     });
@@ -102,24 +116,34 @@
     map.addLayer(sosMarkers);
     map.addLayer(rescueMarkers);
 
-    const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
-    const statusName = { pending:'รอช่วย', going:'กำลังไป', acknowledged:'รับทราบ', completed:'เสร็จสิ้น' };
-
     const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
     const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
     const list = document.getElementById('list');
+    let currentFilter = 'all';
+
+    function applyFilter() {
+        document.querySelectorAll('.case').forEach(c => {   // แก้ตรงนี้แล้ว!
+            c.classList.toggle('show', currentFilter === 'all' || currentFilter === c.dataset.status);
+        });
+    }
 
     function formatTime(ts){
         const diff = (Date.now() - ts) / 60000;
-        if (diff < 60) return `${Math.floor(diff)} นาทีที่แล้ว`;
-        if (diff < 1440) return `${Math.floor(diff/60)} ชม.ที่แล้ว`;
-        return `${Math.floor(diff/1440)} วันที่แล้ว`;
+        if (diff < 60) return `${Math.floor(diff)} นาที`;
+        if (diff < 1440) return `${Math.floor(diff/60)} ชม.`;
+        return `${Math.floor(diff/1440)} วัน`;
     }
 
     async function loadAll(){
         let data = {};
-        try { data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json() || {}; }
-        catch { list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้</div>'; return; }
+        try { 
+            const res = await fetch(SOS_DB+'.json?t='+Date.now());
+            data = await res.json() || {}; 
+        }
+        catch(e) { 
+            list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้<br>กรุณาตรวจสอบอินเทอร์เน็ต</div>'; 
+            return; 
+        }
 
         const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
         const frag = document.createDocumentFragment();
@@ -143,7 +167,7 @@
                 <div class="case-body">
                     <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name || r.fullname || 'ไม่ระบุ'}</span></div>
                     <div class="line"><span class="label">ต้องการ:</span><span class="value">${(r.types||[]).join(', ') || '-'}</span></div>
-                    <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo}</span></div>
+                    <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo}ที่แล้ว</span></div>
                     <div class="status-line ${status}">สถานะ: ${statusName[status]}</div>
                     <div class="status-btns">
                         <button class="status-btn btn-pending ${status==='pending'?'active':''}" onclick="event.stopPropagation(); confirmStatus('${id}','pending')">รอช่วย</button>
@@ -153,37 +177,37 @@
                     </div>
                 </div>
             `;
-
             card.onclick = (e) => {
                 if(e.target.tagName==='BUTTON') return;
                 document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
                 card.classList.add('active');
                 if(hasLoc) map.setView([lat,lng], 18);
             };
-
             frag.appendChild(card);
 
+            // Marker วงกลมสวย ๆ แบบ jitasa.care
             if(hasLoc){
                 const icon = L.divIcon({
-                    html: `<div style="background:${statusColor[status]};color:#fff;padding:6px 12px;border-radius:12px;
-                            font-weight:800;font-size:13px;border:3px solid #fff;box-shadow:0 0 15px #000;">
-                            #${reqId}<br><small>${timeAgo}</small>
-                           </div>`,
-                    className: '', iconSize: [100, 50], iconAnchor: [50, 25]
+                    html: `<div style="background:${statusColor[status]};width:38px;height:38px;border-radius:50%;
+                            border:5px solid #fff;box-shadow:0 4px 15px rgba(0,0,0,0.6);"></div>`,
+                    className: '', 
+                    iconSize: [48,48], 
+                    iconAnchor: [24,24]
                 });
 
-                const m = L.marker([lat,lng], {icon});
+                const m = L.marker([lat,lng], {icon, status});
                 m.bindPopup(`
-                    <b style="font-size:1.2rem;color:#c41e3a">#${reqId}</b><br>
+                    <b style="font-size:1.3rem;color:#c41e3a">#${reqId}</b><br>
                     <b>ชื่อ:</b> ${r.name||'-'}<br>
                     <b>โทร:</b> ${r.phone?`<a href="tel:${r.phone}">${r.phone}</a>`:'-'}<br>
                     <b>ต้องการ:</b> ${(r.types||[]).join(', ')}<br>
-                    <b>รับแจ้ง:</b> ${timeAgo}<br><br>
+                    <b>สถานะ:</b> ${statusName[status]}<br>
+                    <b>รับแจ้ง:</b> ${timeAgo}ที่แล้ว<br><br>
                     <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${lat},${lng}')"
-                        style="width:100%;padding:10px;background:#c41e3a;color:#fff;border:none;border-radius:8px;font-weight:bold">
+                        style="width:100%;padding:12px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold">
                         นำทางด่วน
                     </button>
-                `,{maxWidth:320});
+                `,{maxWidth:340});
                 sosMarkers.addLayer(m);
             }
         });
@@ -192,7 +216,10 @@
         document.getElementById('countPending').textContent = counts.pending;
         document.getElementById('countGoing').textContent = counts.going;
         document.getElementById('countCompleted').textContent = counts.completed;
-        list.innerHTML=''; list.appendChild(frag);
+
+        list.innerHTML = ''; 
+        list.appendChild(frag);
+        applyFilter();
 
         // ทีมกู้ภัย
         try {
@@ -201,13 +228,13 @@
             if(rdata){
                 Object.entries(rdata).forEach(([id, t])=>{
                     if(!t.lat || !t.lng) return;
-                    const color = t.vehicle?.includes('พยาบาล') ? '#c41e3a' : '#2c3e50';
+                    const color = t.vehicle?.includes('พยาบาล') ? '#c41e3a' : '#1a1a1a';
                     const icon = L.divIcon({
-                        html: `<div style="background:${color};color:#fff;padding:8px 16px;border-radius:12px;
-                                font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 0 15px #000;">
+                        html: `<div style="background:${color};color:#fff;padding:9px 18px;border-radius:16px;
+                                font-weight:900;font-size:15px;border:4px solid #fff;box-shadow:0 0 20px #000;">
                                 ${t.name || 'ทีมกู้ภัย'}
                                </div>`,
-                        className: '', iconSize: [140, 50], iconAnchor: [70, 25]
+                        className: '', iconSize: [160, 56], iconAnchor: [80, 28]
                     });
                     L.marker([t.lat, t.lng], {icon}).addTo(rescueMarkers);
                 });
@@ -228,10 +255,8 @@
         item.onclick = () => {
             document.querySelectorAll('.stat-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            const f = item.dataset.filter;
-            document.querySelectorAll('.case').forEach(c => {
-                c.style.display = (f==='all' || c.dataset.status===f) ? 'block' : 'none';
-            });
+            currentFilter = item.dataset.filter;
+            applyFilter();
         };
     });
 
