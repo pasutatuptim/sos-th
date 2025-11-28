@@ -114,9 +114,15 @@
      * Initializes Firebase and authenticates the user.
      */
     async function initFirebase() {
-        if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
-            console.error("Firebase config is missing or invalid.");
-            showStatus("เกิดข้อผิดพลาด: การตั้งค่า Firebase ไม่ถูกต้อง", 'error');
+        // เพิ่ม Logging เพื่อตรวจสอบ Config ที่ได้รับ
+        console.log("Canvas App ID:", appId);
+        console.log("Raw __firebase_config:", typeof __firebase_config !== 'undefined' ? __firebase_config : 'undefined');
+        console.log("Parsed firebaseConfig:", firebaseConfig);
+
+        if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+            console.error("Firebase config is missing, empty, or lacks Project ID.");
+            // อัปเดตข้อความ error ให้ชัดเจนขึ้น
+            showStatus("เกิดข้อผิดพลาด: การตั้งค่า Firebase ไม่ถูกต้อง (โปรดตรวจสอบ Canvas Config)", 'error');
             registerButton.disabled = true;
             return;
         }
