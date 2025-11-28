@@ -67,16 +67,16 @@
     // --- CONFIGURATION SETUP: ใช้ Realtime Database URL ที่กำหนด ---
     
     const PROJECT_ID = "pasuta-sos";
-    // กำหนด databaseURL หลักของ RTDB
+    // *** แก้ไข: กำหนด databaseURL เป็น Root URL เท่านั้น เพื่อไม่ให้เกิดข้อผิดพลาดในการ Initialize ***
     const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`; 
 
-    // Mock config สำหรับการรันนอก Canvas
+    // Mock config สำหรับการรันนอก Canvas (แก้ไข apiKey เพื่อหลีกเลี่ยงข้อผิดพลาด)
     const MOCK_PROJECT_ID = PROJECT_ID;
     const MOCK_FIREBASE_CONFIG = {
-        apiKey: "AIzaSy_MockAPIKey_12345",
+        apiKey: "", // ลบ API Key จำลองเพื่อแก้ไข Error: auth/api-key-not-valid
         authDomain: `${MOCK_PROJECT_ID}.firebaseapp.com`,
         projectId: MOCK_PROJECT_ID,
-        databaseURL: DB_URL, // สำคัญสำหรับ RTDB
+        databaseURL: DB_URL, // สำคัญ: ต้องเป็น Root URL
         storageBucket: `${MOCK_PROJECT_ID}.appspot.com`,
         messagingSenderId: "1234567890",
         appId: "1:1234567890:web:mockedapp"
@@ -151,6 +151,7 @@
      */
     function getTeamRef() {
         if (!userId) throw new Error("User ID is not set.");
+        // *** แก้ไข: เนื่องจาก DB_URL ถูกตั้งค่าเป็น Root แล้ว, ต้องใส่ child path 'rescue_teams' กลับมาที่นี่ ***
         // RTDB Path: /rescue_teams/{userId}
         const path = `rescue_teams/${userId}`; 
         return ref(db, path);
@@ -279,6 +280,7 @@
                 metadata: {
                     appId: appId,
                     userId: userId,
+                    // ไม่ต้องส่ง createdAt ถ้าเป็นการโหลดครั้งแรกเพื่อรักษาค่าเดิมไว้
                     createdAt: isInitialLoad ? undefined : Date.now() 
                 }
             };
