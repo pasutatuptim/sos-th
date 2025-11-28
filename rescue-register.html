@@ -58,23 +58,31 @@
 </div>
 
 <script type="module">
+    // Import libraries for Firebase App, Auth, and Realtime Database (RTDB)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // Import RTDB specific functions
+    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    
+    // --- CONFIGURATION SETUP: ใช้ Realtime Database URL ที่กำหนด ---
+    
+    const PROJECT_ID = "pasuta-sos";
+    // กำหนด databaseURL หลักของ RTDB
+    const DB_URL = `https://${PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`; 
 
-    // --- CONFIGURATION SETUP (จัดการกับปัญหา projectId หากรันนอก Canvas) ---
-    const MOCK_PROJECT_ID = "pasuta-sos-mock-2025";
+    // Mock config สำหรับการรันนอก Canvas
+    const MOCK_PROJECT_ID = PROJECT_ID;
     const MOCK_FIREBASE_CONFIG = {
         apiKey: "AIzaSy_MockAPIKey_12345",
         authDomain: `${MOCK_PROJECT_ID}.firebaseapp.com`,
         projectId: MOCK_PROJECT_ID,
+        databaseURL: DB_URL, // สำคัญสำหรับ RTDB
         storageBucket: `${MOCK_PROJECT_ID}.appspot.com`,
         messagingSenderId: "1234567890",
         appId: "1:1234567890:web:mockedapp"
     };
     
-    // ดึงค่า Global Variables
+    // ดึงค่า Global Variables (จาก Canvas Environment)
     const appId = typeof __app_id !== 'undefined' ? __app_id : MOCK_PROJECT_ID;
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -82,8 +90,11 @@
     try {
         firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : 'null');
         if (!firebaseConfig || !firebaseConfig.projectId) {
-            // ใช้ Mock config หากไม่มี config ที่ถูกต้อง
             firebaseConfig = MOCK_FIREBASE_CONFIG;
+        }
+        // ตรวจสอบและเพิ่ม databaseURL ใน config หากยังไม่มี
+        if (!firebaseConfig.databaseURL) {
+            firebaseConfig.databaseURL = DB_URL;
         }
     } catch (e) {
         firebaseConfig = MOCK_FIREBASE_CONFIG;
@@ -136,13 +147,13 @@
     }
 
     /**
-     * ดึง Path สำหรับ Document ของทีมปัจจุบัน (Firestore)
+     * ดึง Path สำหรับ Reference ของทีมปัจจุบัน (RTDB)
      */
-    function getTeamDocRef() {
+    function getTeamRef() {
         if (!userId) throw new Error("User ID is not set.");
-        // บันทึกในคอลเลกชันสาธารณะเพื่อให้แอป Viewer อ่านได้
-        const docPath = `/artifacts/${appId}/public/data/rescue_teams/${userId}`;
-        return doc(db, docPath);
+        // RTDB Path: /rescue_teams/{userId}
+        const path = `rescue_teams/${userId}`; 
+        return ref(db, path);
     }
 
     // ----------------------------------------------------
@@ -153,18 +164,19 @@
         showStatus("กำลังเริ่มต้น Firebase...", 'waiting');
         try {
             const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
+            // ใช้ getDatabase() สำหรับ RTDB
+            db = getDatabase(app); 
             auth = getAuth(app);
-            setLogLevel('debug'); // ตั้งค่า Log Level สำหรับ Firestore
+            // ไม่จำเป็นต้องใช้ setLogLevel สำหรับ Firestore
 
-            // 1. ลงชื่อเข้าใช้ (บังคับใช้ Auth)
+            // 1. ลงชื่อเข้าใช้
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
             } else {
                 await signInAnonymously(auth);
             }
 
-            // 2. รอการตรวจสอบสถานะ Auth
+            // 2. รอการตรวจสอบสถานะ Auth และตั้งค่า userId
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
@@ -187,18 +199,18 @@
     // ----------------------------------------------------
 
     /**
-     * โหลดข้อมูลทีมที่มีอยู่แล้ว และตั้งค่า onSnapshot เพื่ออัปเดต UI
+     * โหลดข้อมูลทีมที่มีอยู่แล้ว และตั้งค่า onValue เพื่ออัปเดต UI (RTDB)
      */
     function loadExistingTeamData() {
         if (!isAuthReady || !userId) return;
 
         showStatus("กำลังดึงข้อมูลทีมเดิม...", 'info');
-        const teamDocRef = getTeamDocRef();
+        const teamRef = getTeamRef();
         
-        // ใช้ onSnapshot เพื่อฟังการเปลี่ยนแปลงของ Document นี้แบบเรียลไทม์
-        onSnapshot(teamDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+        // ใช้ onValue เพื่อฟังการเปลี่ยนแปลงของ Reference นี้แบบเรียลไทม์
+        onValue(teamRef, (snapshot) => {
+            const data = snapshot.val(); // ดึงข้อมูล
+            if (data) {
                 teamNameEl.value = data.name || '';
                 phoneEl.value = data.phone || '';
                 vehicleEl.value = data.vehicle || 'รถยนต์';
@@ -230,7 +242,6 @@
 
         const teamName = teamNameEl.value.trim();
         if (!teamName) {
-            // ใช้ Modal/Status แทน alert()
             showStatus("กรุณากรอกชื่อทีม", 'error');
             return;
         }
@@ -242,7 +253,6 @@
 
     /**
      * ขอสิทธิ์ตำแหน่งและตั้งค่า watchPosition
-     * @param {boolean} isInitialLoad - ใช้สำหรับโหลดข้อมูลเดิม
      */
     function requestLocationAndStartWatch(isInitialLoad) {
         if (!navigator.geolocation) {
@@ -257,7 +267,7 @@
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            // 1. บันทึกข้อมูลทีมเริ่มต้น
+            // 1. บันทึกข้อมูลทีมเริ่มต้น (ใช้ update() ของ RTDB)
             const teamData = {
                 name: teamNameEl.value.trim(),
                 phone: phoneEl.value.trim() || null,
@@ -273,8 +283,8 @@
                 }
             };
 
-            // ใช้ setDoc เพื่อสร้างหรือเขียนทับ Document ที่ Path เฉพาะ
-            setDoc(getTeamDocRef(), teamData, { merge: true })
+            // ใช้ update() เพื่อสร้างหรืออัปเดตข้อมูลที่ Reference ที่กำหนด
+            update(getTeamRef(), teamData)
                 .then(() => {
                     // 2. เริ่มติดตามตำแหน่งอย่างต่อเนื่อง
                     watchId = navigator.geolocation.watchPosition(updateLocation, handleLocationError, {
@@ -293,15 +303,17 @@
     }
 
     /**
-     * อัปเดตตำแหน่งอย่างต่อเนื่องเมื่อมีการเคลื่อนที่
+     * อัปเดตตำแหน่งอย่างต่อเนื่องเมื่อมีการเคลื่อนที่ (RTDB)
      */
     async function updateLocation(position) {
         if (!userId) return;
 
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : 0; 
+        // แปลง m/s เป็น km/h
+        const speed = position.coords.speed !== null ? (position.coords.speed * 3.6).toFixed(1) : 0; 
         
+        // ข้อมูลที่ต้องการอัปเดต (จะอัปเดตเฉพาะ field เหล่านี้)
         const updateData = {
             lat: lat,
             lng: lng,
@@ -312,8 +324,8 @@
         const MAX_RETRIES = 3;
         for (let i = 0; i < MAX_RETRIES; i++) {
             try {
-                // ใช้ updateDoc เพื่ออัปเดตเฉพาะ field ที่จำเป็น
-                await updateDoc(getTeamDocRef(), updateData);
+                // ใช้ update() ของ RTDB
+                await update(getTeamRef(), updateData); 
                 showStatus(`✅ กำลังส่ง: ${teamNameEl.value} | ความเร็ว: ${speed} กม./ชม.`, 'success');
                 return; 
             } catch (e) {
