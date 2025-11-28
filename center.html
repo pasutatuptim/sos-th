@@ -40,7 +40,7 @@
         }
         #alertBar.show{height:70px}
 
-        /* การ์ดเคส + การ์ดทีมกู้ภัย */
+        /* การ์ดเคส + ทีมกู้ภัย */
         .case, .rescue-card{
             background:#fff;color:#222;border-radius:12px;margin-bottom:11px;
             box-shadow:0 4px 15px rgba(0,0,0,0.4);cursor:pointer;transition:all .25s;
@@ -53,8 +53,8 @@
         .case.completed {border-left-color:#27ae60;}
         .case.new{border-left:12px solid #ff1744 !important;}
         .rescue-card{border-left-color:#ffb300 !important;}
-        .rescue-card:hover,.case:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
-        .rescue-card.active,.case.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
+        .case:hover,.rescue-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
+        .case.active,.rescue-card.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
         .case-header,.rescue-header{padding:13px 16px 8px;background:rgba(0,0,0,0.04);}
         .req-id,.team-name{font-size:1.35rem;font-weight:800;color:#c41e3a;}
         .team-name{color:#ffb300;}
@@ -65,8 +65,27 @@
         .status-line{margin:12px 0 14px;padding:10px 12px;border-radius:10px;background:#f8f9fa;font-weight:700;border-left:5px solid;}
         .status-line.pending   {background:#fdeaea;border-left-color:#e74c3c;color:#c41e3a;}
         .status-line.going     {background:#e8f4fd;border-left-color:#2980b9;color:#1e6ca8;}
+        .status-line.acknowledged {background:#fff4e5;border-left-color:#e67e22;color:#d35400;}
+        .status-line.completed {background:#eaf7ec;border-left-color:#27ae60;color:#1e8449;}
         .note-line{background:#ffebee;padding:12px 14px;border-radius:10px;margin:10px 0;
             border-left:6px solid #e74c3c;color:#c41e3a;font-weight:700;font-size:1rem;}
+        
+        /* ปุ่มสถานะ – แก้ให้ถูกต้อง 100% */
+        .status-btns{display:flex;gap:7px;margin-top:12px;}
+        .status-btn{
+            flex:1;padding:11px 6px;font-size:0.88rem;font-weight:700;
+            border-radius:10px;border:none;cursor:pointer;color:#fff;
+            background:#777 !important; /* ค่าเริ่มต้น = เทา */
+            transition:all 0.3s;
+        }
+        .status-btn.active{
+            transform:scale(1.08);box-shadow:0 4px 15px rgba(0,0,0,0.4);
+        }
+        .status-btn.pending.active{background:#e74c3c !important;}
+        .status-btn.going.active{background:#2980b9 !important;}
+        .status-btn.acknowledged.active{background:#e67e22 !important;}
+        .status-btn.completed.active{background:#27ae60 !important;}
+
         .btn-group{display:flex;gap:8px;margin-top:12px;}
         .btn-small{padding:10px 14px;background:#333;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
         .btn-small.tel{background:#25d366;}
@@ -75,7 +94,7 @@
 </head>
 <body>
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-<div id="alertBar">มีเคสใหม่!</div>
+<div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
 
 <div class="sidebar">
     <div class="stats">
@@ -121,7 +140,6 @@
     let previousIds = new Set();
     let rescueTeamMarkers = {};
 
-    // ไอคอนทีมกู้ภัย: วงกลมเหลืองล้วน ไม่มีชื่อ
     const rescueIcon = L.divIcon({
         html: `<div style="width:48px;height:48px;background:#ffb300;border:6px solid #000;border-radius:50%;box-shadow:0 4px 20px rgba(0,0,0,0.7);"></div>`,
         className: '', iconSize: [60,60], iconAnchor: [30,30]
@@ -143,7 +161,6 @@
     }
 
     async function loadAll(){
-        // === โหลด SOS ===
         let data = {};
         try { data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json() || {}; }
         catch(e) { console.log("SOS error"); }
@@ -196,6 +213,7 @@
             card.className = `case ${status}${newestCase?.id===id ? ' new' : ''}`;
             card.dataset.status = status;
             const noteHTML = note ? `<div class="note-line">หมายเหตุ: ${note}</div>` : '';
+
             card.innerHTML = `
                 <div class="case-header"><div class="req-id">#${reqId}</div></div>
                 <div class="case-body">
@@ -205,13 +223,18 @@
                     ${noteHTML}
                     <div class="status-line ${status}">สถานะ: ${statusName[status]}</div>
                     <div class="status-btns">
-                        <button class="status-btn btn-pending ${status==='pending'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','pending')">รอช่วย</button>
-                        <button class="status-btn btn-going ${status==='going'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','going')">กำลังไป</button>
-                        <button class="status-btn btn-ack ${status==='acknowledged'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','acknowledged')">รับทราบ</button>
-                        <button class="status-btn btn-done ${status==='completed'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','completed')">เสร็จสิ้น</button>
+                        <button class="status-btn pending ${status==='pending'?'active':''}" 
+                                onclick="event.stopPropagation();confirmStatus('${id}','pending')">รอช่วย</button>
+                        <button class="status-btn going ${status==='going'?'active':''}" 
+                                onclick="event.stopPropagation();confirmStatus('${id}','going')">กำลังไป</button>
+                        <button class="status-btn acknowledged ${status==='acknowledged'?'active':''}" 
+                                onclick="event.stopPropagation();confirmStatus('${id}','acknowledged')">รับทราบ</button>
+                        <button class="status-btn completed ${status==='completed'?'active':''}" 
+                                onclick="event.stopPropagation();confirmStatus('${id}','completed')">เสร็จสิ้น</button>
                     </div>
                 </div>
             `;
+
             card.onclick = e => {
                 if(e.target.tagName==='BUTTON') return;
                 document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
@@ -227,12 +250,11 @@
                     className: '', iconSize: [48,48], iconAnchor: [24,24]
                 });
                 const m = L.marker([lat,lng], {icon, status});
-                m.bindPopup(`<b style="font-size:1.4rem;color:#c41e3a">#${reqId}</b><br>...`,{maxWidth:360});
                 sosMarkers.addLayer(m);
             }
         });
 
-        // === โหลดทีมกู้ภัย + สร้างการ์ด ===
+        // === โหลดทีมกู้ภัย + การ์ด ===
         let activeTeams = 0;
         try {
             const rdata = await (await fetch(RESCUE_DB+'.json?t='+Date.now())).json() || {};
@@ -247,7 +269,7 @@
                 const name = t.name || "ทีมกู้ภัย";
                 const speed = t.speed ? `${t.speed.toFixed(1)} กม./ชม.` : "หยุดนิ่ง";
 
-                // Marker บนแผนที่: วงกลมเหลืองล้วน
+                // Marker
                 if (rescueTeamMarkers[id]) {
                     rescueTeamMarkers[id].setLatLng([t.lat, t.lng]);
                     if (rescueTrails[id]) {
@@ -260,10 +282,9 @@
                         <div style="font-weight:bold;color:#ffb300;font-size:1.4rem;">ทีมกู้ภัย: ${name}</div>
                         <b>ประเภท:</b> ${t.vehicle || "ไม่ระบุ"}<br>
                         <b>ความเร็ว:</b> ${speed}<br>
-                        ${t.phone ? `<b>โทร:</b> <a href="tel:${t.phone}" style="color:#fff">${t.phone}</a><br>` : ''}
-                        <b>อัปเดต:</b> เมื่อสักครู่<br><br>
+                        ${t.phone ? `<b>โทร:</b> <a href="tel:${t.phone}">${t.phone}</a><br>` : ''}
                         <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}')"
-                            style="width:100%;padding:12px;background:#ffb300;color:#000;border:none;border-radius:10px;font-weight:bold">
+                            style="margin-top:8px;width:100%;padding:12px;background:#ffb300;color:#000;border:none;border-radius:10px;font-weight:bold">
                             นำทางไปหาทีม
                         </button>
                     `,{maxWidth:360});
@@ -271,7 +292,7 @@
                     rescueTrails[id] = L.polyline([[t.lat, t.lng]], {color:'#ffb300', weight:5, opacity:0.8}).addTo(rescueLayer);
                 }
 
-                // สร้างการ์ดทีมกู้ภัย
+                // การ์ดทีมกู้ภัย
                 const rescueCard = document.createElement('div');
                 rescueCard.className = 'rescue-card';
                 rescueCard.dataset.status = 'rescue';
@@ -281,7 +302,6 @@
                         <div class="line"><span class="label">ประเภท:</span><span class="value">${t.vehicle || "ไม่ระบุ"}</span></div>
                         <div class="line"><span class="label">ความเร็ว:</span><span class="value">${speed}</span></div>
                         ${t.phone ? `<div class="line"><span class="label">เบอร์:</span><span class="value">${t.phone}</span></div>` : ''}
-                        <div class="line"><span class="label">อัปเดต:</span><span class="value">เมื่อสักครู่</span></div>
                         <div class="btn-group">
                             ${t.phone ? `<button class="btn-small tel" onclick="window.location.href='tel:${t.phone}'">โทร</button>` : ''}
                             <button class="btn-small nav" onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}')">นำทาง</button>
@@ -297,7 +317,7 @@
             });
         } catch(e) { console.log(e); }
 
-        // อัปเดตตัวเลข
+        // อัปเดตตัวเลข + แสดงผล
         document.getElementById('countAll').textContent = counts.all;
         document.getElementById('countPending').textContent = counts.pending;
         document.getElementById('countGoing').textContent = counts.going;
@@ -311,7 +331,7 @@
     }
 
     function confirmStatus(id,newStatus){
-        if(confirm(`เปลี่ยนเป็น "${statusName[newStatus]}" ใช่หรือไม่?`)){
+        if(confirm(`เปลี่ยนสถานะเป็น "${statusName[newStatus]}" ใช่หรือไม่?`)){
             fetch(`${SOS_DB}/${id}.json`,{method:'PATCH',body:JSON.stringify({status:newStatus,updatedAt:Date.now()})})
             .then(()=>loadAll());
         }
@@ -342,4 +362,3 @@
 </script>
 </body>
 </html>
-
