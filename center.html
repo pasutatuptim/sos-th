@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
+    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย (เวอร์ชันสมบูรณ์สุด)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -29,9 +29,9 @@
         .pending .stat-num{color:#e74c3c;}
         .going .stat-num{color:#2980b9;}
         .completed .stat-num{color:#27ae60;}
+        .rescue .stat-num{color:#ffb300;}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
         .blink{animation:blink .6s ease-in-out 4}
-
         #alertBar{
             position:fixed;top:55px;left:0;right:0;height:0;background:#e74c3c;color:#fff;
             font-weight:900;font-size:1.5rem;text-align:center;padding:0 20px;
@@ -40,53 +40,52 @@
         }
         #alertBar.show{height:70px}
 
-        .case{background:#fff;color:#222;border-radius:12px;margin-bottom:11px;
+        /* การ์ดเคส + การ์ดทีมกู้ภัย */
+        .case, .rescue-card{
+            background:#fff;color:#222;border-radius:12px;margin-bottom:11px;
             box-shadow:0 4px 15px rgba(0,0,0,0.4);cursor:pointer;transition:all .25s;
-            border-left:7px solid #ccc;display:none;}
-        .case.show{display:block;}
+            border-left:7px solid #ccc;display:none;
+        }
+        .case.show, .rescue-card.show{display:block;}
         .case.pending   {border-left-color:#e74c3c;}
         .case.going     {border-left-color:#2980b9;}
         .case.acknowledged {border-left-color:#e67e22;}
         .case.completed {border-left-color:#27ae60;}
         .case.new{border-left:12px solid #ff1744 !important;}
-        .case:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
-        .case.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
-        .case-header{padding:13px 16px 8px;background:rgba(0,0,0,0.04);}
-        .req-id{font-size:1.35rem;font-weight:800;color:#c41e3a;}
-        .case-body{padding:0 16px 14px;}
+        .rescue-card{border-left-color:#ffb300 !important;}
+        .rescue-card:hover,.case:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
+        .rescue-card.active,.case.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
+        .case-header,.rescue-header{padding:13px 16px 8px;background:rgba(0,0,0,0.04);}
+        .req-id,.team-name{font-size:1.35rem;font-weight:800;color:#c41e3a;}
+        .team-name{color:#ffb300;}
+        .case-body,.rescue-body{padding:0 16px 14px;}
         .line{margin:9px 0;font-size:0.98rem;display:flex;align-items:center;}
-        .label{color:#444;font-weight:600;width:88px;}
+        .label{color:#444;font-weight:600;width:100px;}
         .value{flex:1;font-weight:500;color:#111;}
-        .status-line{margin:12px 0 14px;padding:10px 12px;border-radius:10px;
-            background:#f8f9fa;font-weight:700;border-left:5px solid;}
+        .status-line{margin:12px 0 14px;padding:10px 12px;border-radius:10px;background:#f8f9fa;font-weight:700;border-left:5px solid;}
         .status-line.pending   {background:#fdeaea;border-left-color:#e74c3c;color:#c41e3a;}
         .status-line.going     {background:#e8f4fd;border-left-color:#2980b9;color:#1e6ca8;}
-        .status-line.acknowledged {background:#fff4e5;border-left-color:#e67e22;color:#d35400;}
-        .status-line.completed {background:#eaf7ec;border-left-color:#27ae60;color:#1e8449;}
         .note-line{background:#ffebee;padding:12px 14px;border-radius:10px;margin:10px 0;
             border-left:6px solid #e74c3c;color:#c41e3a;font-weight:700;font-size:1rem;}
-        .status-btns{display:flex;gap:7px;margin-top:10px;}
-        .status-btn{flex:1;padding:11px 6px;font-size:0.88rem;font-weight:700;
-            border-radius:10px;border:none;cursor:pointer;color:#fff;}
-        .status-btn:not(.active){background:#999 !important;}
-        .btn-pending.active{background:#e74c3c;}
-        .btn-going.active{background:#2980b9;}
-        .btn-ack.active{background:#e67e22;}
-        .btn-done.active{background:#27ae60;}
+        .btn-group{display:flex;gap:8px;margin-top:12px;}
+        .btn-small{padding:10px 14px;background:#333;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
+        .btn-small.tel{background:#25d366;}
+        .btn-small.nav{background:#ffb300;color:#000;}
     </style>
 </head>
 <body>
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-<div id="alertBar">มีเเจ้งเหตู!</div>
+<div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
 
 <div class="sidebar">
     <div class="stats">
-        <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด (กดกรอง)</div>
+        <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด</div>
         <div class="stats-grid">
-            <div class="stat-item total active" data-filter="all"><div class="stat-num" id="countAll">0</div><div>ทั้งหมด</div></div>
-            <div class="stat-item pending" data-filter="pending"><div class="stat-num" id="countPending">0</div><div>รอช่วย</div></div>
+            <div class="stat-item total active" data-filter="all"><div class="stat-num" id="countAll">0</div><div>เคสทั้งหมด</div></div>
+            <div class="stat-item pending" data-filter="pending"><div class="stat-num" id="countPending">0</div><div>รอช่วยเหลือ</div></div>
             <div class="stat-item going" data-filter="going"><div class="stat-num" id="countGoing">0</div><div>กำลังไป</div></div>
             <div class="stat-item completed" data-filter="completed"><div class="stat-num" id="countCompleted">0</div><div>เสร็จสิ้น</div></div>
+            <div class="stat-item rescue" data-filter="rescue"><div class="stat-num" id="countRescue">0</div><div>ทีมกู้ภัย</div></div>
         </div>
     </div>
     <div id="list"></div>
@@ -105,48 +104,28 @@
     const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
     const statusName = { pending:'รอช่วย', going:'กำลังไป', acknowledged:'รับทราบ', completed:'เสร็จสิ้น' };
 
-    // SOS Cluster (แก้เลขมั่วแล้ว)
-    let sosMarkers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 70,
-        iconCreateFunction: cluster => {
-            const markers = cluster.getAllChildMarkers();
-            let highest = 0, color = '#e74c3c';
-            markers.forEach(m => {
-                const p = priority[m.options.status] || 0;
-                if (p > highest) { highest = p; color = statusColor[m.options.status]; }
-            });
-            return L.divIcon({
-                html: `<div style="background:${color}cc;width:60px;height:60px;border-radius:50%;
-                        border:4px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.6);
-                        display:flex;align-items:center;justify-content:center;
-                        font-weight:900;font-size:22px;color:#fff;">
-                        ${markers.length}
-                       </div>`,
-                className: '', iconSize: [60,60]
-            });
-        }
-    });
-
-    // ทีมช่วยเหลือเรียลไทม์
-    const rescueMarkers = L.layerGroup();
+    let sosMarkers = L.markerClusterGroup({ maxClusterRadius: 70 });
+    const rescueLayer = L.layerGroup();
+    const rescueTrails = {};
     map.addLayer(sosMarkers);
-    map.addLayer(rescueMarkers);
+    map.addLayer(rescueLayer);
 
     const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
     const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
+
     const list = document.getElementById('list');
     const alertBar = document.getElementById('alertBar');
     const alertSound = document.getElementById('alertSound');
     const pendingEl = document.getElementById('countPending');
     let currentFilter = 'all';
     let previousIds = new Set();
-    let rescueTeamMarkers = {}; // เก็บ marker ของแต่ละทีม
+    let rescueTeamMarkers = {};
 
-    function applyFilter() {
-        document.querySelectorAll('.case').forEach(c => {
-            c.classList.toggle('show', currentFilter === 'all' || currentFilter === c.dataset.status);
-        });
-    }
+    // ไอคอนทีมกู้ภัย: วงกลมเหลืองล้วน ไม่มีชื่อ
+    const rescueIcon = L.divIcon({
+        html: `<div style="width:48px;height:48px;background:#ffb300;border:6px solid #000;border-radius:50%;box-shadow:0 4px 20px rgba(0,0,0,0.7);"></div>`,
+        className: '', iconSize: [60,60], iconAnchor: [30,30]
+    });
 
     function formatTime(ts){
         const diff = (Date.now() - ts) / 60000;
@@ -163,14 +142,14 @@
         setTimeout(()=>{ alertBar.classList.remove('show'); pendingEl.classList.remove('blink'); }, 10000);
     }
 
-    // โหลด SOS
-    async function loadSOS(){
+    async function loadAll(){
+        // === โหลด SOS ===
         let data = {};
         try { data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json() || {}; }
-        catch(e) { console.log("SOS error"); return; }
+        catch(e) { console.log("SOS error"); }
 
         map.removeLayer(sosMarkers);
-        sosMarkers = L.markerClusterGroup({ spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 70,
+        sosMarkers = L.markerClusterGroup({ maxClusterRadius: 70,
             iconCreateFunction: cluster => {
                 const markers = cluster.getAllChildMarkers();
                 let highest = 0, color = '#e74c3c';
@@ -209,17 +188,37 @@
             const note = r.note ? r.note.trim() : '';
 
             if (!previousIds.has(id) && status === 'pending') {
-                newestCase = {id, reqId, lat, lng, name: r.name||r.fullname||'ไม่ระบุ', note};
+                newestCase = {id, reqId, lat, lng, name: r.name||'ไม่ระบุ', note};
                 triggerAlert(reqId, newestCase.name, note);
             }
 
-            // การ์ด + Marker (เหมือนเดิมทุกอย่าง)
             const card = document.createElement('div');
-            card.className = `case ${status}${newestCase && newestCase.id===id ? ' new' : ''}`;
+            card.className = `case ${status}${newestCase?.id===id ? ' new' : ''}`;
             card.dataset.status = status;
             const noteHTML = note ? `<div class="note-line">หมายเหตุ: ${note}</div>` : '';
-            card.innerHTML = `...`; // (ย่อไว้เพื่อความกระชับ)
-            // ... (ใส่โค้ดการ์ดเต็มตามเวอร์ชั่นก่อนหน้า)
+            card.innerHTML = `
+                <div class="case-header"><div class="req-id">#${reqId}</div></div>
+                <div class="case-body">
+                    <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name||r.fullname||'ไม่ระบุ'}</span></div>
+                    <div class="line"><span class="label">ต้องการ:</span><span class="value">${(r.types||[]).join(', ')||'-'}</span></div>
+                    <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo}ที่แล้ว</span></div>
+                    ${noteHTML}
+                    <div class="status-line ${status}">สถานะ: ${statusName[status]}</div>
+                    <div class="status-btns">
+                        <button class="status-btn btn-pending ${status==='pending'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','pending')">รอช่วย</button>
+                        <button class="status-btn btn-going ${status==='going'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','going')">กำลังไป</button>
+                        <button class="status-btn btn-ack ${status==='acknowledged'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','acknowledged')">รับทราบ</button>
+                        <button class="status-btn btn-done ${status==='completed'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','completed')">เสร็จสิ้น</button>
+                    </div>
+                </div>
+            `;
+            card.onclick = e => {
+                if(e.target.tagName==='BUTTON') return;
+                document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
+                card.classList.add('active');
+                if(hasLoc) map.setView([lat,lng],18);
+            };
+            frag.appendChild(card);
 
             if(hasLoc){
                 const icon = L.divIcon({
@@ -228,78 +227,118 @@
                     className: '', iconSize: [48,48], iconAnchor: [24,24]
                 });
                 const m = L.marker([lat,lng], {icon, status});
-                m.bindPopup(`<b>#${reqId}</b><br>...`, {maxWidth:360});
+                m.bindPopup(`<b style="font-size:1.4rem;color:#c41e3a">#${reqId}</b><br>...`,{maxWidth:360});
                 sosMarkers.addLayer(m);
-                if(newestCase && newestCase.id===id){
-                    setTimeout(()=>{ map.setView([lat,lng],18); m.openPopup(); }, 1000);
-                }
             }
-            frag.appendChild(card);
         });
 
+        // === โหลดทีมกู้ภัย + สร้างการ์ด ===
+        let activeTeams = 0;
+        try {
+            const rdata = await (await fetch(RESCUE_DB+'.json?t='+Date.now())).json() || {};
+            Object.entries(rdata).forEach(([id, t]) => {
+                if (!t.lat || !t.lng || !t.active) {
+                    if (rescueTeamMarkers[id]) rescueLayer.removeLayer(rescueTeamMarkers[id]);
+                    if (rescueTrails[id]) rescueLayer.removeLayer(rescueTrails[id]);
+                    return;
+                }
+                activeTeams++;
+
+                const name = t.name || "ทีมกู้ภัย";
+                const speed = t.speed ? `${t.speed.toFixed(1)} กม./ชม.` : "หยุดนิ่ง";
+
+                // Marker บนแผนที่: วงกลมเหลืองล้วน
+                if (rescueTeamMarkers[id]) {
+                    rescueTeamMarkers[id].setLatLng([t.lat, t.lng]);
+                    if (rescueTrails[id]) {
+                        rescueTrails[id].addLatLng([t.lat, t.lng]);
+                        if (rescueTrails[id].getLatLngs().length > 50) rescueTrails[id].getLatLngs().shift();
+                    }
+                } else {
+                    const m = L.marker([t.lat, t.lng], {icon: rescueIcon}).addTo(rescueLayer);
+                    m.bindPopup(`
+                        <div style="font-weight:bold;color:#ffb300;font-size:1.4rem;">ทีมกู้ภัย: ${name}</div>
+                        <b>ประเภท:</b> ${t.vehicle || "ไม่ระบุ"}<br>
+                        <b>ความเร็ว:</b> ${speed}<br>
+                        ${t.phone ? `<b>โทร:</b> <a href="tel:${t.phone}" style="color:#fff">${t.phone}</a><br>` : ''}
+                        <b>อัปเดต:</b> เมื่อสักครู่<br><br>
+                        <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}')"
+                            style="width:100%;padding:12px;background:#ffb300;color:#000;border:none;border-radius:10px;font-weight:bold">
+                            นำทางไปหาทีม
+                        </button>
+                    `,{maxWidth:360});
+                    rescueTeamMarkers[id] = m;
+                    rescueTrails[id] = L.polyline([[t.lat, t.lng]], {color:'#ffb300', weight:5, opacity:0.8}).addTo(rescueLayer);
+                }
+
+                // สร้างการ์ดทีมกู้ภัย
+                const rescueCard = document.createElement('div');
+                rescueCard.className = 'rescue-card';
+                rescueCard.dataset.status = 'rescue';
+                rescueCard.innerHTML = `
+                    <div class="rescue-header"><div class="team-name">ทีม: ${name}</div></div>
+                    <div class="rescue-body">
+                        <div class="line"><span class="label">ประเภท:</span><span class="value">${t.vehicle || "ไม่ระบุ"}</span></div>
+                        <div class="line"><span class="label">ความเร็ว:</span><span class="value">${speed}</span></div>
+                        ${t.phone ? `<div class="line"><span class="label">เบอร์:</span><span class="value">${t.phone}</span></div>` : ''}
+                        <div class="line"><span class="label">อัปเดต:</span><span class="value">เมื่อสักครู่</span></div>
+                        <div class="btn-group">
+                            ${t.phone ? `<button class="btn-small tel" onclick="window.location.href='tel:${t.phone}'">โทร</button>` : ''}
+                            <button class="btn-small nav" onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}')">นำทาง</button>
+                        </div>
+                    </div>
+                `;
+                rescueCard.onclick = () => {
+                    document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
+                    rescueCard.classList.add('active');
+                    map.setView([t.lat, t.lng], 16);
+                };
+                frag.appendChild(rescueCard);
+            });
+        } catch(e) { console.log(e); }
+
+        // อัปเดตตัวเลข
         document.getElementById('countAll').textContent = counts.all;
         document.getElementById('countPending').textContent = counts.pending;
         document.getElementById('countGoing').textContent = counts.going;
         document.getElementById('countCompleted').textContent = counts.completed;
-        list.innerHTML=''; list.appendChild(frag);
+        document.getElementById('countRescue').textContent = activeTeams;
+
+        list.innerHTML = ''; 
+        list.appendChild(frag);
         applyFilter();
         previousIds = currentIds;
     }
 
-    // โหลดทีมช่วยเหลือเรียลไทม์
-    async function loadRescueTeams(){
-        try {
-            const data = await (await fetch(RESCUE_DB+'.json?t='+Date.now())).json();
-            if(!data) return;
-
-            Object.entries(data).forEach(([id, team]) => {
-                if(!team.lat || !team.lng) return;
-
-                const name = team.name || team.teamName || 'ทีมกู้ภัย';
-                const phone = team.phone || '';
-                const vehicle = team.vehicle || 'รถยนต์';
-
-                // สีตามประเภท
-                let bgColor = '#1a1a1a';
-                if(vehicle.includes('เรือ')) bgColor = '#2980b9';
-                else if(vehicle.includes('พยาบาล') || vehicle.includes('รถโรงพยาบาล')) bgColor = '#c41e3a';
-                else if(vehicle.includes('ดับเพลิง')) bgColor = '#e67e22';
-
-                const icon = L.divIcon({
-                    html: `<div style="background:${bgColor};color:#fff;padding:10px 20px;border-radius:20px;
-                            font-weight:900;font-size:16px;border:5px solid #fff;box-shadow:0 0 25px #000;
-                            white-space:nowrap;">
-                            ${name}
-                           </div>`,
-                    className: '', iconSize: [180, 60], iconAnchor: [90, 30]
-                });
-
-                if(rescueTeamMarkers[id]){
-                    rescueTeamMarkers[id].setLatLng([team.lat, team.lng]);
-                } else {
-                    const marker = L.marker([team.lat, team.lng], {icon}).addTo(rescueMarkers);
-                    marker.bindPopup(`
-                        <b style="font-size:1.4rem;color:#c41e3a">${name}</b><br>
-                        <b>ประเภท:</b> ${vehicle}<br>
-                        ${phone ? `<b>โทร:</b> <a href="tel:${phone}">${phone}</a><br>` : ''}
-                        <b>อัปเดตล่าสุด:</b> ตอนนี้<br><br>
-                        <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${team.lat},${team.lng}')"
-                            style="width:100%;padding:12px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold">
-                            นำทางไปหาทีม
-                        </button>
-                    `,{maxWidth:360});
-                    rescueTeamMarkers[id] = marker;
-                }
-            });
-        } catch(e) { console.log("Rescue team error"); }
+    function confirmStatus(id,newStatus){
+        if(confirm(`เปลี่ยนเป็น "${statusName[newStatus]}" ใช่หรือไม่?`)){
+            fetch(`${SOS_DB}/${id}.json`,{method:'PATCH',body:JSON.stringify({status:newStatus,updatedAt:Date.now()})})
+            .then(()=>loadAll());
+        }
     }
 
-    // รันทั้งหมด
-    loadSOS();
-    loadRescueTeams();
-    setInterval(() => { loadSOS(); loadRescueTeams(); }, 5000); // อัปเดตทุก 5 วินาที
+    document.querySelectorAll('.stat-item').forEach(item=>{
+        item.onclick=()=>{
+            document.querySelectorAll('.stat-item').forEach(i=>i.classList.remove('active'));
+            item.classList.add('active');
+            currentFilter = item.dataset.filter || 'all';
+            applyFilter();
+        };
+    });
+
+    function applyFilter() {
+        document.querySelectorAll('.case,.rescue-card').forEach(el => {
+            const isRescue = el.classList.contains('rescue-card');
+            const matches = currentFilter === 'all' || 
+                           currentFilter === el.dataset.status || 
+                           (currentFilter === 'rescue' && isRescue);
+            el.classList.toggle('show', matches);
+        });
+    }
+
+    loadAll();
+    setInterval(loadAll, 3000);
     setTimeout(()=>map.invalidateSize(),500);
 </script>
 </body>
 </html>
-
