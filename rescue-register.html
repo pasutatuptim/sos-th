@@ -119,15 +119,15 @@
         console.log("Raw __firebase_config:", typeof __firebase_config !== 'undefined' ? __firebase_config : 'undefined');
         console.log("Parsed firebaseConfig:", firebaseConfig);
 
-        if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
-            console.error("Firebase config is missing, empty, or lacks Project ID.");
-            // อัปเดตข้อความ error ให้ชัดเจนขึ้น
-            showStatus("เกิดข้อผิดพลาด: การตั้งค่า Firebase ไม่ถูกต้อง (โปรดตรวจสอบ Canvas Config)", 'error');
-            registerButton.disabled = true;
-            return;
-        }
-
         try {
+            // **การตรวจสอบและตั้งค่า Firebase**
+            // ถ้า firebaseConfig ว่างเปล่าหรือไม่มี Project ID, จะโยนข้อผิดพลาดเพื่อให้เข้าสู่ catch block
+            if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+                console.error("Firebase config is missing, empty, or lacks Project ID.");
+                // โยนข้อผิดพลาดที่กำหนดเองเพื่อระบุว่าเป็นปัญหาจาก Canvas Config
+                throw new Error("Canvas environment did not provide a valid Firebase configuration.");
+            }
+
             // 1. Initialize App and Services
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -153,7 +153,13 @@
 
         } catch (error) {
             console.error("Firebase initialization failed:", error);
-            showStatus("เกิดข้อผิดพลาดในการเริ่มต้นระบบ: " + error.message, 'error');
+            
+            // ตรวจสอบข้อผิดพลาดที่โยนออกมาเพื่อแสดงข้อความที่เหมาะสมที่สุด
+            const errorMessage = error.message.includes("valid Firebase configuration") 
+                ? "เกิดข้อผิดพลาด: การตั้งค่า Firebase ไม่ถูกต้อง (โปรดตรวจสอบ Canvas Config)"
+                : "เกิดข้อผิดพลาดในการเริ่มต้นระบบ: " + error.message;
+
+            showStatus(errorMessage, 'error');
             registerButton.disabled = true;
         }
     }
