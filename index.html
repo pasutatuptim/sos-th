@@ -4,14 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>แจ้งเหตุด่วน</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- ตั้งชื่อตอนแชร์ลิงก์ให้สวย -->
+  <title>แจ้งขอความช่วยเหลือ SOS</title>
+  <meta property="og:title" content="แจ้งขอความช่วยเหลือ SOS">
+  <meta property="og:description" content="กดเพื่อขอความช่วยเหลือ ทีมกู้ภัยจะรีบมาช่วยทันที">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos-icon.png">
+  <meta name="description" content="ระบบแจ้งขอความช่วยเหลือ">
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{background:#c62828;color:#fff;font-family:-apple-system,system-ui,sans-serif;min-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(to bottom,#c62828,#9a0007)}
-    .header{padding:40px 20px 30px;text-align:center}
+    body{background:#c62828;color:#fff;font-family:-apple-system,system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column;background:linear-gradient(to bottom,#c62828,#9a0007)}
+    
+    .header{padding:40px 20px 20px;text-align:center;flex-shrink:0}
     .header h1{font-size:2.6rem;font-weight:900;letter-spacing:1px}
     .header p{font-size:1.25rem;margin-top:8px;opacity:0.95}
+
+    .main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:20px}
+
     #gpsBtn{margin:20px 30px;padding:18px;background:#ffeb3b;color:#c62828;border-radius:28px;font-size:1.4rem;font-weight:900;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,0.4);cursor:pointer}
    
     .info{margin:15px 25px;padding:20px;background:rgba(255,255,255,0.15);border-radius:24px;border:3px dashed rgba(255,255,255,0.4);text-align:center}
@@ -23,8 +36,23 @@
     .btn i{font-size:2.4rem;margin-bottom:8px;display:block}
     .btn:active{transform:scale(0.94)}
     .btn.selected{background:#fff;color:#c62828;transform:scale(0.97)}
-    #sendBtn{margin:30px 40px 60px;padding:24px;background:#4caf50;color:#fff;font-size:2.4rem;font-weight:900;text-align:center;border-radius:40px;box-shadow:0 15px 40px rgba(0,0,0,0.6);cursor:pointer}
+    #sendBtn{margin:30px 40px;padding:24px;background:#4caf50;color:#fff;font-size:2.4rem;font-weight:900;text-align:center;border-radius:40px;box-shadow:0 15px 40px rgba(0,0,0,0.6);cursor:pointer}
     #sendBtn.disabled{background:#666;color:#aaa;cursor:not-allowed;opacity:0.7}
+
+    /* Footer สีดำติดล่าง */
+    footer{
+      background:#000;
+      color:#fff;
+      text-align:center;
+      padding:18px 20px;
+      font-size:1rem;
+      font-weight:600;
+      letter-spacing:0.5px;
+      flex-shrink:0;
+      border-top:3px solid #333;
+    }
+    footer a{color:#ff1744;text-decoration:none;font-weight:900}
+
     #success{
       position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
       background:#1b5e20;border-radius:32px;padding:40px 30px;
@@ -40,31 +68,43 @@
   </style>
 </head>
 <body>
+
   <div class="header">
     <h1>แจ้งเหตุด่วน</h1>
     <h1>SOS-ZING</h1>
-    <p>ระบบกำลังขอตำแหน่งของคุณ</p>
+    <p>ระบบกำลังขอตำแหน่งของคุณอัตโนมัติ...</p>
   </div>
-  <div id="gpsBtn">
-    <i class="fas fa-spinner fa-spin"></i> กำลังขอตำแหน่งของคุณ...
+
+  <div class="main">
+    <div id="gpsBtn">
+      <i class="fas fa-spinner fa-spin"></i> กำลังขอตำแหน่งของคุณ...
+    </div>
+
+    <div class="info">
+      <p>หรือใส่เบอร์โทรก็แจ้งได้ทันที</p>
+      <input type="text" id="name" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)">
+      <input type="tel" id="phone" placeholder="เบอร์โทรศัพท์">
+      <textarea id="note" rows="2" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+    </div>
+
+    <div class="grid">
+      <div class="btn" data-type="อาหารและน้ำ"><i class="fas fa-utensils"></i>อาหาร/น้ำ</div>
+      <div class="btn" data-type="ติดอยู่ในพื้นที่"><i class="fas fa-house-flood-water"></i>ติดอยู่ในพื้นที่</div>
+      <div class="btn" data-type="กำลังจมน้ำ"><i class="fas fa-person-swimming"></i>กำลังจมน้ำ</div>
+      <div class="btn" data-type="เจ็บป่วย"><i class="fas fa-heart-pulse"></i>เจ็บป่วย</div>
+      <div class="btn" data-type="มีเด็ก"><i class="fas fa-baby"></i>มีเด็ก</div>
+      <div class="btn" data-type="มีผู้สูงอายุ"><i class="fas fa-user"></i>ผู้สูงอายุ</div>
+      <div class="btn" data-type="สัตว์เลี้ยง"><i class="fas fa-dog"></i>สัตว์เลี้ยง</div>
+      <div class="btn" data-type="มีผู้เสียชีวิต"><i class="fas fa-cross"></i>มีผู้เสียชีวิต</div>
+    </div>
+
+    <div id="sendBtn" class="disabled">แจ้งเหตุด่วน</div>
   </div>
-  <div class="info">
-    <p>หรือใส่เบอร์โทรก็แจ้งได้ทันที</p>
-    <input type="text" id="name" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)">
-    <input type="tel" id="phone" placeholder="เบอร์โทรศัพท์">
-    <textarea id="note" rows="2" placeholder="รายละเอียดเพิ่มเติม"></textarea>
-  </div>
-  <div class="grid">
-    <div class="btn" data-type="อาหารและน้ำ"><i class="fas fa-utensils"></i>อาหาร/น้ำ</div>
-    <div class="btn" data-type="ติดอยู่ในพื้นที่"><i class="fas fa-house-flood-water"></i>ติดอยู่ในพื้นที่</div>
-    <div class="btn" data-type="กำลังจมน้ำ"><i class="fas fa-person-swimming"></i>กำลังจมน้ำ</div>
-    <div class="btn" data-type="เจ็บป่วย"><i class="fas fa-heart-pulse"></i>เจ็บป่วย</div>
-    <div class="btn" data-type="มีเด็ก"><i class="fas fa-baby"></i>มีเด็ก</div>
-    <div class="btn" data-type="มีผู้สูงอายุ"><i class="fas fa-user"></i>ผู้สูงอายุ</div>
-    <div class="btn" data-type="สัตว์เลี้ยง"><i class="fas fa-dog"></i>สัตว์เลี้ยง</div>
-    <div class="btn" data-type="มีผู้เสียชีวิต"><i class="fas fa-cross"></i>มีผู้เสียชีวิต</div>
-  </div>
-  <div id="sendBtn" class="disabled">แจ้งเหตุด่วน</div>
+
+  <!-- Footer สีดำ -->
+  <footer>
+    POWERED BY <a href="https://www.facebook.com/pasuta66" target="_blank">PASUTA</a>
+  </footer>
 
   <div id="success">
     <i class="fas fa-check-circle"></i>
@@ -87,47 +127,40 @@
     let position = null;
     let types = [];
 
-    // ฟังก์ชันขอตำแหน่ง
     function requestLocation() {
       if (!navigator.geolocation) {
         gpsBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ไม่รองรับ GPS';
         return;
       }
-
-      gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังขอตำแหน่ง...';
+      gpsBtn.innerHTML = 
+   
+ '<i class="fas fa-spinner fa-spin"></i> กำลังขอตำแหน่ง...';
 
       navigator.geolocation.getCurrentPosition(
         pos => {
           position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          gpsBtn.innerHTML = '<i class="fas fa-check-circle"></i> ได้ตำแหน่งแล้ว ✓';
+          gpsBtn.innerHTML = '<i class="fas fa-check-circle"></i> ได้ตำแหน่งแล้ว';
           gpsBtn.style.background = '#4caf50';
           gpsBtn.style.color = '#fff';
           checkReady();
         },
         err => {
-          console.log(err);
-          gpsBtn.innerHTML = '<i class="fas fa-location-slash"></i> ไม่สามารถขอตำแหน่งได้<br><small>แตยังแจ้งได้ด้วยเบอร์โทร</small>';
+          gpsBtn.innerHTML = '<i class="fas fa-location-slash"></i> ขอตำแหน่งไม่ได้<br><small>ใช้เบอร์โทรแทนได้</small>';
           gpsBtn.style.background = '#e65100';
           gpsBtn.style.fontSize = '1.1rem';
           checkReady();
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 60000
-        }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
       );
     }
 
-    // ขอตำแหน่งอัตโนมัติทันทีที่โหลดหน้าเสร็จ
+    // เปิด GPS อัตโนมัติทันทีที่โหลดหน้า
     window.addEventListener('load', () => {
-      setTimeout(requestLocation, 800); // หน่วงนิดนึงเพื่อให้ผู้ใช้เห็นว่าเริ่มขอแล้ว
+      setTimeout(requestLocation, 800);
     });
 
-    // ยังกดปุ่มได้อีกครั้งหากต้องการรีเฟรชตำแหน่ง
     gpsBtn.onclick = requestLocation;
 
-    // เลือกประเภทเหตุ
     document.querySelectorAll('.btn').forEach(b => {
       b.onclick = () => {
         b.classList.toggle('selected');
