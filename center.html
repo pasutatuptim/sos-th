@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
+    <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย (เรียลไทม์เต็มรูปแบบ)</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -76,7 +76,7 @@
     </style>
 </head>
 <body>
-<div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
+<div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย (เรียลไทม์)</div>
 <div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
 
 <div class="sidebar">
@@ -105,15 +105,10 @@
     const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
     const statusName = { pending:'รอช่วย', going:'กำลังไป', acknowledged:'รับทราบ', completed:'เสร็จสิ้น' };
 
-    // สร้าง cluster ใหม่ทุกครั้งเพื่อป้องกันเลขมั่ว
-    let sosMarkers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        maxClusterRadius: 70,
-        iconCreateFunction: function(cluster) {
+    let sosMarkers = L.markerClusterGroup({ spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 70,
+        iconCreateFunction: cluster => {
             const markers = cluster.getAllChildMarkers();
-            let highest = 0;
-            let color = '#e74c3c';
+            let highest = 0, color = '#e74c3c';
             markers.forEach(m => {
                 const p = priority[m.options.status] || 0;
                 if (p > highest) { highest = p; color = statusColor[m.options.status]; }
@@ -135,12 +130,14 @@
     map.addLayer(rescueMarkers);
 
     const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
+    const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
     const list = document.getElementById('list');
     const alertBar = document.getElementById('alertBar');
     const alertSound = document.getElementById('alertSound');
     const pendingEl = document.getElementById('countPending');
     let currentFilter = 'all';
     let previousIds = new Set();
+    let rescueTeamMarkers = {};
 
     function applyFilter() {
         document.querySelectorAll('.case').forEach(c => {
@@ -164,22 +161,16 @@
     }
 
     async function loadAll(){
+        // โหลด SOS
         let data = {};
         try { data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json() || {}; }
-        catch(e) { list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้</div>'; return; }
+        catch(e) { console.log("SOS error"); }
 
-        const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
-        const frag = document.createDocumentFragment();
-        const currentIds = new Set();
-        let newestCase = null;
-
-        // ลบ cluster เก่าออกก่อน แล้วสร้างใหม่ทุกครั้ง → แก้เลขมั่ว 100%
         map.removeLayer(sosMarkers);
-        sosMarkers = L.markerClusterGroup({
-            spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 70,
-            iconCreateFunction: function(cluster) {
+        sosMarkers = L.markerClusterGroup({ spiderfyOnMaxZoom: true, showCoverageOnHover: false, maxClusterRadius: 70,
+            iconCreateFunction: cluster => {
                 const markers = cluster.getAllChildMarkers();
-                let highest = 0; let color = '#e74c3c';
+                let highest = 0, color = '#e74c3c';
                 markers.forEach(m => {
                     const p = priority[m.options.status] || 0;
                     if (p > highest) { highest = p; color = statusColor[m.options.status]; }
@@ -196,6 +187,11 @@
             }
         });
         map.addLayer(sosMarkers);
+
+        const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
+        const frag = document.createDocumentFragment();
+        const currentIds = new Set();
+        let newestCase = null;
 
         Object.entries(data).sort((a,b)=> (b[1].timestamp||0) - (a[1].timestamp||0)).forEach(([id,r])=>{
             const status = r.status || 'pending';
@@ -266,8 +262,7 @@
                 sosMarkers.addLayer(m);
 
                 if(newestCase && newestCase.id===id){
-                    setTimeout(()=>{ map.setView([lat,lng],18); m.openPopup(); }, 1000);
-                    setTimeout(()=>{ card.scrollIntoView({behavior:"smooth",block:"center"}); }, 1200);
+                    setTimeout(()=>{ map.setView([lat,lng],18); m.openPopup(); card.scrollIntoView({behavior:"smooth"}); }, 800);
                 }
             }
         });
@@ -276,10 +271,51 @@
         document.getElementById('countPending').textContent = counts.pending;
         document.getElementById('countGoing').textContent = counts.going;
         document.getElementById('countCompleted').textContent = counts.completed;
-
         list.innerHTML=''; list.appendChild(frag);
         applyFilter();
         previousIds = currentIds;
+
+        // โหลดทีมช่วยเหลือเรียลไทม์
+        try {
+            const rdata = await (await fetch(RESCUE_DB+'.json?t='+Date.now())).json();
+            if(rdata){
+                Object.entries(rdata).forEach(([id, t])=>{
+                    if(!t.lat || !t.lng) return;
+                    const name = t.name || t.teamName || 'ทีมกู้ภัย';
+                    const phone = t.phone || '';
+                    const vehicle = t.vehicle || 'รถยนต์';
+                    let bgColor = '#1a1a1a';
+                    if(vehicle.includes('เรือ')) bgColor = '#2980b9';
+                    else if(vehicle.includes('พยาบาล')||vehicle.includes('รถโรงพยาบาล')) bgColor = '#c41e3a';
+                    else if(vehicle.includes('ดับเพลิง')) bgColor = '#e67e22';
+
+                    const icon = L.divIcon({
+                        html: `<div style="background:${bgColor};color:#fff;padding:10px 22px;border-radius:22px;
+                                font-weight:900;font-size:16px;border:5px solid #fff;box-shadow:0 0 30px #000;">
+                                ${name}
+                               </div>`,
+                        className: '', iconSize: [200, 64], iconAnchor: [100, 32]
+                    });
+
+                    if(rescueTeamMarkers[id]){
+                        rescueTeamMarkers[id].setLatLng([t.lat, t.lng]);
+                    } else {
+                        const m = L.marker([t.lat, t.lng], {icon}).addTo(rescueMarkers);
+                        m.bindPopup(`
+                            <b style="font-size:1.4rem;color:#c41e3a">${name}</b><br>
+                            <b>ประเภท:</b> ${vehicle}<br>
+                            ${phone?`<b>โทร:</b> <a href="tel:${phone}">${phone}</a><br>`:''}
+                            <b>อัปเดต:</b> ตอนนี้<br><br>
+                            <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}')"
+                                style="width:100%;padding:12px;background:#c41e3a;color:#fff;border:none;border-radius:10px;font-weight:bold">
+                                นำทางไปหาทีม
+                            </button>
+                        `,{maxWidth:360});
+                        rescueTeamMarkers[id] = m;
+                    }
+                });
+            }
+        } catch(e) {}
     }
 
     function confirmStatus(id,newStatus){
@@ -299,7 +335,7 @@
     });
 
     loadAll();
-    setInterval(loadAll,8000);
+    setInterval(loadAll, 5000);
     setTimeout(()=>map.invalidateSize(),500);
 </script>
 </body>
