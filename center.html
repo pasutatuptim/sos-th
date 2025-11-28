@@ -4,77 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
         #map{height:100vh;width:100%}
+        .header{position:fixed;top:0;left:0;right:0;height:55px;background:#c41e3a;z-index:1000;
+            display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;
+            box-shadow:0 4px 20px rgba(0,0,0,0.6);}
+        .sidebar{position:fixed;top:55px;left:0;bottom:0;width:430px;background:#0f0f0f;
+            border-right:6px solid #c41e3a;z-index:999;overflow-y:auto;padding:14px;}
 
-        .header{
-            position:fixed;top:0;left:0;right:0;height:55px;background:#c41e3a;z-index:1000;
-            display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;
-        }
-
-        .sidebar{
-            position:fixed;top:55px;left:0;bottom:0;width:440px;background:#0a0a0a;
-            border-right:5px solid #c41e3a;z-index:999;overflow-y:auto;padding:12px;
-        }
-
+        /* สรุปสถานการณ์ — กดตรงนี้เพื่อกรองได้เลย */
         .stats{
-            background:#111;padding:12px;border-radius:10px;margin-bottom:12px;text-align:center;
-            font-weight:700;font-size:1rem;color:#fff;
+            background:linear-gradient(135deg,#1a1a1a,#0f0f0f);padding:18px;border-radius:16px;margin-bottom:18px;
+            border:1px solid #333;box-shadow:0 8px 32px rgba(196,30,58,0.15);
+            user-select:none;
         }
+        .stats-title{
+            text-align:center;font-size:1.15rem;font-weight:700;margin-bottom:12px;
+        }
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .stat-item{
+            text-align:center;padding:16px 10px;border-radius:14px;background:rgba(255,255,255,0.07);
+            cursor:pointer;transition:all .25s;border:2px solid transparent;
+        }
+        .stat-item:hover{transform:translateY(-4px);box-shadow:0 10px 25px rgba(0,0,0,0.5);}
+        .stat-item.active{
+            border-color:#c41e3a;background:rgba(196,30,58,0.25);transform:scale(1.05);
+            box-shadow:0 0 20px rgba(196,30,58,0.5);
+        }
+        .stat-num{font-size:2rem;font-weight:800;margin-bottom:6px;}
+        .stat-label{font-size:0.9rem;opacity:0.9;}
+        .total .stat-num{color:#c41e3a;}
+        .pending .stat-num{color:#e74c3c;}
+        .going .stat-num{color:#2980b9;}
+        .completed .stat-num{color:#27ae60;}
 
-        .filter-bar{
-            display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap;
-        }
-        .filter-btn{
-            flex:1;padding:10px;font-size:0.95rem;border-radius:8px;
-            background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;
-        }
-        .filter-btn.active{background:#c41e3a;}
-
-        /* การ์ดขาวสะอาดตา */
+        /* การ์ดเรียบง่ายเหมือนเดิม */
         .case{
-            background:#fff;color:#000;border-radius:12px;padding:16px;
-            margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.5);
-            cursor:pointer;transition:.3s;
+            background:#fff;color:#222;border-radius:10px;margin-bottom:10px;
+            box-shadow:0 3px 12px rgba(0,0,0,0.35);cursor:pointer;transition:all .25s;
+            border-left:6px solid #ccc;overflow:hidden;position:relative;
         }
-        .case:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(196,30,58,0.4);}
-        .case.active{border:3px solid #c41e3a;padding:13px;}
+        .case.pending   {border-left-color:#e74c3c;}
+        .case.going     {border-left-color:#2980b9;}
+        .case.acknowledged {border-left-color:#e67e22;}
+        .case.completed {border-left-color:#27ae60;}
+        .case:hover{transform:translateY(-3px);box-shadow:0 10px 25px rgba(0,0,0,0.5);}
+        .case.active{box-shadow:0 0 0 4px rgba(196,30,58,0.5);transform:scale(1.02);}
 
-        .req-id{font-size:1.2rem;font-weight:700;color:#c41e3a;margin-bottom:8px;}
-        .line{display:flex;margin:7px 0;font-size:0.98rem;}
-        .label{color:#444;font-weight:600;width:140px;flex-shrink:0;}
-        .value{flex:1;}
+        .case-header{padding:12px 14px 8px;background:rgba(0,0,0,0.03);}
+        .req-id{font-size:1.28rem;font-weight:800;color:#c41e3a;}
+        .case-body{padding:8px 14px 12px;}
+        .line{margin:6px 0;font-size:0.95rem;display:flex;align-items:center;}
+        .label{color:#555;font-weight:600;width:82px;font-size:0.9rem;}
+        .value{flex:1;font-weight:500;}
 
-        .status-tag{
-            display:inline-block;padding:6px 14px;border-radius:20px;
-            font-weight:700;font-size:0.9rem;color:#fff;margin-top:8px;
+        .status-btns{display:flex;gap:6px;margin-top:12px;}
+        .status-btn{
+            flex:1;padding:10px 6px;font-size:0.88rem;font-weight:700;border-radius:8px;
+            border:none;cursor:pointer;color:#fff;transition:all .2s;
         }
-        .pending{background:#e74c3c}.going{background:#2980b9}
-        .acknowledged{background:#e67e22}.completed{background:#27ae60}
+        .btn-pending{background:#e74c3c;}
+        .btn-going{background:#2980b9;}
+        .btn-ack{background:#e67e22;}
+        .btn-done{background:#27ae60;}
+        .status-btn.active{box-shadow:0 4px 12px rgba(0,0,0,0.5);transform:scale(1.05);}
     </style>
 </head>
 <body>
-
 <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-
 <div class="sidebar">
-    <div class="stats" id="stats">กำลังโหลด...</div>
-    <div class="filter-bar">
-        <div class="filter-btn active" data-filter="all">ทั้งหมด</div>
-        <div class="filter-btn" data-filter="pending">รอช่วย</div>
-        <div class="filter-btn" data-filter="going">กำลังไป</div>
-        <div class="filter-btn" data-filter="acknowledged">รับทราบ</div>
-        <div class="filter-btn" data-filter="completed">เสร็จแล้ว</div>
+    <div class="stats">
+        <div class="stats-title">สรุปสถานการณ์ล่าสุด (กดเพื่อกรอง)</div>
+        <div class="stats-grid">
+            <div class="stat-item total active" data-filter="all">
+                <div class="stat-num" id="countAll">0</div>
+                <div class="stat-label">ทั้งหมด</div>
+            </div>
+            <div class="stat-item pending" data-filter="pending">
+                <div class="stat-num" id="countPending">0</div>
+                <div class="stat-label">รอช่วย</div>
+            </div>
+            <div class="stat-item going" data-filter="going">
+                <div class="stat-num" id="countGoing">0</div>
+                <div class="stat-label">กำลังไป</div>
+            </div>
+            <div class="stat-item completed" data-filter="completed">
+                <div class="stat-num" id="countCompleted">0</div>
+                <div class="stat-label">เสร็จสิ้น</div>
+            </div>
+        </div>
     </div>
     <div id="list"></div>
 </div>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -83,131 +109,164 @@
     const map = L.map('map').setView([13.94678, 100.56125], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // ใช้ MarkerCluster เพื่อแก้ปัญหาจุดซ้อนกัน
+    const statusColor = { pending:'#e74c3c', going:'#2980b9', acknowledged:'#e67e22', completed:'#27ae60' };
+    const statusPriority = { pending:4, going:3, acknowledged:2, completed:1 };
+
     const markers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        maxClusterRadius: 60
+        maxClusterRadius: 60,
+        iconCreateFunction: function(cluster) {
+            let highest = 0, color = '#888';
+            cluster.getAllChildMarkers().forEach(m => {
+                const p = statusPriority[m.options.status] || 1;
+                if (p > highest) { highest = p; color = statusColor[m.options.status]; }
+            });
+            return L.divIcon({
+                html: `<div style="background:${color};color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;border:4px solid #fff;box-shadow:0 4px 15px #000;">
+                        ${cluster.getChildCount()}
+                       </div>`,
+                className: '',
+                iconSize: [52,52]
+            });
+        }
     });
     map.addLayer(markers);
 
-    const cards = {}, list = document.getElementById('list');
-    const statsEl = document.getElementById('stats');
-    let currentFilter = 'all';
-
-    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests.json';
+    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
+    const list = document.getElementById('list');
 
     function formatDate(ts){
         const d = new Date(ts);
         const now = Date.now();
-        const diffDay = Math.floor((now - ts)/86400000);
-        const dayText = diffDay===0 ? 'วันนี้' : diffDay===1 ? 'เมื่อวาน' : `${diffDay} วันที่แล้ว`;
-        const thaiYear = d.getFullYear() + 543;
-        return `${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} ${d.getDate()}/${d.getMonth()+1}/${thaiYear} (${dayText})`;
+        const diffMin = Math.floor((now - ts)/60000);
+        if (diffMin < 60) return `${diffMin} นาทีที่แล้ว`;
+        const diffHr = Math.floor(diffMin/60);
+        if (diffHr < 24) return `${diffHr} ชม.ที่แล้ว`;
+        return `${d.toLocaleDateString('th-TH')} ${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`;
     }
 
-    function getStatusClass(s){ return s||'pending'; }
-    function getStatusText(s){
-        return {pending:'รอการช่วยเหลือ', going:'กำลังไป', acknowledged:'รับทราบแล้ว', completed:'เสร็จสิ้น'}[s||'pending'];
+    function confirmStatus(id, newStatus, name){
+        if(confirm(`เปลี่ยนสถานะเป็น "${name}" ใช่หรือไม่?`)){
+            updateStatus(id, newStatus);
+        }
+    }
+
+    async function updateStatus(id, newStatus){
+        try {
+            await fetch(`${DB_URL}/${id}.json`, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({status: newStatus, updatedAt: Date.now()})
+            });
+            load();
+        } catch(e){ alert('อัปเดตไม่สำเร็จ'); }
     }
 
     async function load(){
         let data = {};
-        try{ data = await (await fetch(DB_URL+'?t='+Date.now())).json() || {}; }
-        catch{ list.innerHTML='<div style="color:#f66;padding:80px;text-align:center">เชื่อมต่อไม่ได้</div>'; return; }
+        try { data = await (await fetch(DB_URL+'.json?t='+Date.now())).json() || {}; }
+        catch { list.innerHTML='<div style="color:#f66;padding:100px;text-align:center">เชื่อมต่อไม่ได้</div>'; return; }
 
         const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
         const frag = document.createDocumentFragment();
-        markers.clearLayers(); // ล้าง marker เก่าทั้งหมด
+        markers.clearLayers();
 
-        const sorted = Object.entries(data).sort((a,b)=> b[1].timestamp - a[1].timestamp);
-
-        sorted.forEach(([id,r])=>{
+        Object.entries(data).sort((a,b)=> (b[1].timestamp||0) - (a[1].timestamp||0)).forEach(([id,r])=>{
             const status = r.status || 'pending';
             counts.all++; counts[status]++;
 
             const lat = r.location?.lat;
             const lng = r.location?.lng;
             const hasLoc = lat && lng;
+            const reqId = r.requestId || id.slice(-10).toUpperCase();
 
-            const reqId = r.requestId || id.slice(-12).toUpperCase();
-
-            // สร้างการ์ด
             const card = document.createElement('div');
-            card.className = 'case';
+            card.className = `case ${status}`;
             card.dataset.status = status;
             card.innerHTML = `
-                <div class="req-id">เลขคำขอ: ${reqId}</div>
-                <div class="line"><span class="label">รับแจ้งเมื่อ:</span><span class="value">${formatDate(r.timestamp)}</span></div>
-                <div class="line"><span class="label">สถานะ:</span><span class="value"><span class="status-tag ${getStatusClass(status)}">${getStatusText(status)}</span></span></div>
-                <div class="line"><span class="label">ความต้องการ:</span><span class="value">${(r.types||[]).join(', ') || '-'}</span></div>
-                <div class="line"><span class="label">ผู้แจ้ง:</span><span class="value">${r.name || r.fullname || '-'}</span></div>
-                <div class="line"><span class="label">ข้อความ:</span><span class="value">${r.note || '-'}</span></div>
-                <div class="line"><span class="label">อัปเดตล่าสุด:</span><span class="value">${formatDate(r.timestamp)}</span></div>
+                <div class="case-header">
+                    <div class="req-id">#${reqId}</div>
+                </div>
+                <div class="case-body">
+                    <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name || r.fullname || 'ไม่ระบุ'}</span></div>
+                    <div class="line"><span class="label">ต้องการ:</span><span class="value">${(r.types||[]).join(', ') || '-'}</span></div>
+                    <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${formatDate(r.timestamp)}</span></div>
+
+                    <div class="status-btns">
+                        <button class="status-btn btn-pending ${status==='pending'?'active':''}" 
+                                onclick="event.stopPropagation(); confirmStatus('${id}','pending','รอช่วย')">
+                            รอช่วย
+                        </button>
+                        <button class="status-btn btn-going ${status==='going'?'active':''}" 
+                                onclick="event.stopPropagation(); confirmStatus('${id}','going','กำลังไป')">
+                            กำลังไป
+                        </button>
+                        <button class="status-btn btn-ack ${status==='acknowledged'?'active':''}" 
+                                onclick="event.stopPropagation(); confirmStatus('${id}','acknowledged','รับทราบ')">
+                            รับทราบ
+                        </button>
+                        <button class="status-btn btn-done ${status==='completed'?'active':''}" 
+                                onclick="event.stopPropagation(); confirmStatus('${id}','completed','เสร็จสิ้น')">
+                            เสร็จสิ้น
+                        </button>
+                    </div>
+                </div>
             `;
 
-            card.onclick = ()=>{
+            card.onclick = (e) => {
+                if(e.target.tagName==='BUTTON') return;
                 document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
                 card.classList.add('active');
                 if(hasLoc) map.setView([lat,lng], 18);
             };
 
             frag.appendChild(card);
-            cards[id] = card;
 
-            // เพิ่ม Marker (ใช้ cluster)
             if(hasLoc){
-                const color = status==='completed'?'#27ae60':(r.priority>=5?'#c41e3a':'#e74c3c');
                 const icon = L.divIcon({
-                    html: `<div style="background:${color};width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 8px #000;"></div>`,
-                    className: 'tiny-marker',
+                    html: `<div style="background:${statusColor[status]};width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px #000;"></div>`,
+                    className: '',
                     iconSize: [22,22]
                 });
-
-                const m = L.marker([lat,lng], {icon});
+                const m = L.marker([lat,lng], {icon, status});
                 m.bindPopup(`
-                    <div style="font-size:0.95rem;line-height:1.8">
-                        <b>เลขคำขอ:</b> ${reqId}<br>
-                        <b>ชื่อ:</b> ${r.name||'-'}<br>
-                        <b>โทร:</b> ${r.phone?`<a href="tel:${r.phone}" style="color:#0ff">${r.phone}</a>`:'-'}<br>
-                        <b>ความต้องการ:</b> ${(r.types||[]).join(', ')}<br>
-                        <b>ข้อความ:</b> ${r.note||'-'}<br>
-                        <b>พิกัด:</b> ${lat.toFixed(5)}, ${lng.toFixed(5)}<br><br>
-                        <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${lat},${lng}')" 
-                                style="width:100%;padding:10px;background:#c41e3a;color:#fff;border:none;border-radius:8px;font-weight:bold">
-                            นำทางด่วน
-                        </button>
-                    </div>
-                `, {maxWidth: 300});
-
+                    <b>#${reqId}</b><br>
+                    <b>ชื่อ:</b> ${r.name||'-'}<br>
+                    <b>โทร:</b> ${r.phone?`<a href="tel:${r.phone}">${r.phone}</a>`:'-'}<br>
+                    <b>ต้องการ:</b> ${(r.types||[]).join(', ')}<br>
+                    <b>ข้อความ:</b> ${r.note||'-'}<br><br>
+                    <button onclick="window.open('https://maps.google.com/maps/dir/?api=1&destination=${lat},${lng}')"
+                        style="width:100%;padding:10px;background:#c41e3a;color:#fff;border:none;border-radius:8px;font-weight:bold">
+                        นำทางด่วน
+                    </button>
+                `,{maxWidth:320});
                 markers.addLayer(m);
             }
         });
 
-        // ลบการ์ดเก่าที่หายไป
-        Object.keys(cards).forEach(k=>{ if(!data[k]){ cards[k].remove(); delete cards[k]; }});
+        // อัปเดตตัวเลขสถิติ
+        document.getElementById('countAll').textContent = counts.all;
+        document.getElementById('countPending').textContent = counts.pending;
+        document.getElementById('countGoing').textContent = counts.going;
+        document.getElementById('countCompleted').textContent = counts.completed;
 
         list.innerHTML=''; list.appendChild(frag);
-
-        statsEl.innerHTML = `ทั้งหมด ${counts.all} | รอช่วย ${counts.pending} | กำลังไป ${counts.going} | รับทราบ ${counts.acknowledged} | เสร็จ ${counts.completed}`;
-
-        // Filter
-        document.querySelectorAll('.filter-btn').forEach(btn=>{
-            btn.onclick = ()=>{
-                document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                document.querySelectorAll('.case').forEach(c=>{
-                    c.style.display = (currentFilter==='all' || c.dataset.status===currentFilter) ? 'block' : 'none';
-                });
-            };
-        });
     }
+
+    // กดที่ช่องสถิติเพื่อกรอง
+    document.querySelectorAll('.stat-item').forEach(item => {
+        item.onclick = () => {
+            document.querySelectorAll('.stat-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const filter = item.dataset.filter;
+            document.querySelectorAll('.case').forEach(c => {
+                c.style.display = (filter === 'all' || c.dataset.status === filter) ? 'block' : 'none';
+            });
+        };
+    });
 
     load();
     setInterval(load, 8000);
-    setTimeout(()=>map.invalidateSize(),500);
+    setTimeout(() => map.invalidateSize(), 500);
 </script>
 </body>
 </html>
