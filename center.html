@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -10,58 +10,13 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
-        
-        /* CSS สำหรับ Sidebar และ Map */
-        #map{height:100vh;}
         .header{position:fixed;top:0;left:0;right:0;height:55px;background:#c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.6);}
-        
-        .sidebar{
-            position:fixed;top:55px;bottom:0;
-            width:430px; 
-            left:0;
-            background:#0f0f0f;border-right:6px solid #c41e3a;z-index:999;
-            overflow-y:auto;padding:14px;
-            transition:left 0.4s ease-in-out; 
-        }
-        .sidebar.hidden {
-            left: -436px;
-        }
-        
-        /* ปรับขนาด Map ตามสถานะ Sidebar */
-        #map{
-            height:100vh;
-            margin-left:436px; 
-            width:calc(100% - 436px); 
-            transition:margin-left 0.4s ease-in-out, width 0.4s ease-in-out;
-        }
-        #map.full-width {
-            margin-left: 0;
-            width: 100%;
-        }
-
-        /* ปุ่ม Toggle Sidebar */
-        #sidebarToggle {
-            position: fixed;
-            top: 55px;
-            left: 436px; 
-            background: #c41e3a;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            z-index: 1001;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-bottom-right-radius: 8px;
-            border-top-right-radius: 8px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-            transition: left 0.4s ease-in-out;
-        }
-        #sidebarToggle.moved {
-            left: 0; 
-        }
-        
-        /* สไตล์เดิม */
+        .sidebar{position:fixed;top:55px;bottom:0;width:430px;left:0;background:#0f0f0f;border-right:6px solid #c41e3a;z-index:999;overflow-y:auto;padding:14px;transition:left 0.4s ease-in-out;}
+        .sidebar.hidden { left:-436px; }
+        #map{height:100vh;margin-left:436px;width:calc(100% - 436px);transition:margin-left 0.4s ease-in-out, width 0.4s ease-in-out;}
+        #map.full-width { margin-left:0;width:100%; }
+        #sidebarToggle { position: fixed; top: 55px; left: 436px; background: #c41e3a; color: white; padding: 10px 15px; border: none; cursor: pointer; z-index:1001; font-size:1.2rem; font-weight:bold; border-bottom-right-radius:8px; border-top-right-radius:8px; box-shadow:2px 0 10px rgba(0,0,0,0.5); transition:left .4s ease-in-out;}
+        #sidebarToggle.moved { left:0; }
         .stats{background:linear-gradient(135deg,#1a1a1a,#0f0f0f);padding:18px;border-radius:16px;margin-bottom:18px;border:1px solid #333;box-shadow:0 8px 32px rgba(196,30,58,0.15);}
         .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
         .stat-item{text-align:center;padding:16px 10px;border-radius:14px;background:rgba(255,255,255,0.07);cursor:pointer;transition:all .25s;border:2px solid transparent;}
@@ -79,7 +34,6 @@
         .case,.rescue-card{background:#fff;color:#222;border-radius:12px;margin-bottom:11px;box-shadow:0 4px 15px rgba(0,0,0,0.4);cursor:pointer;transition:all .25s;border-left:7px solid #ccc;display:none;}
         .case.show,.rescue-card.show{display:block;}
         .case.new{border-left:12px solid #ff1744 !important;}
-        .case.pending{border-left: 12px solid #ff1744 !important;}
         .rescue-card{border-left-color:#ffb300 !important;}
         .case:hover,.rescue-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.5);}
         .case.active,.rescue-card.active{box-shadow:0 0 0 5px rgba(196,30,58,0.4);transform:scale(1.02);}
@@ -108,75 +62,83 @@
         .popup-btn{padding:10px 14px;background:#333;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;flex:1;}
         .popup-btn.tel{background:#25d366;}
         .popup-btn.nav{background:#ffb300;color:#000;}
+        .pulse-ring { position: absolute; top: 50%; left: 50%; width: 48px; height: 48px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 0 #ff1744; animation: pulse-effect 5.5s infinite; }
+        @keyframes pulse-effect { 0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 23, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); } }
 
-        /* CSS สำหรับ Pulse Animation Marker (Pending) */
-        .pulse-ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 0 0 #ff1744;
-            animation: pulse-effect 5.5s infinite;
-        }
-        @keyframes pulse-effect {
-            0% {
-                box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 20px rgba(255, 23, 68, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(255, 23, 68, 0);
-            }
+        /* small screens */
+        @media (max-width: 800px){
+            .sidebar{width:100%;left:0;transform:translateY(0);height:50vh;}
+            #map{margin-left:0;width:100%;height:50vh;bottom:0;top:50vh;}
+            #sidebarToggle{left:calc(100% - 70px);top:65px;}
         }
     </style>
 </head>
 <body>
-<div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
-<button id="sidebarToggle" onclick="toggleSidebar()">« ซ่อนเมนู</button>
-<div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
-<div class="sidebar" id="sidebar">
-    <div class="stats">
-        <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด</div>
-        <div class="stats-grid">
-            <div class="stat-item total active" data-filter="all"><div class="stat-num" id="countAll">0</div><div>เคสทั้งหมด</div></div>
-            <div class="stat-item pending" data-filter="pending"><div class="stat-num" id="countPending">0</div><div>รอช่วยเหลือ</div></div>
-            <div class="stat-item going" data-filter="going"><div class="stat-num" id="countGoing">0</div><div>กำลังไป</div></div>
-            <div class="stat-item completed" data-filter="completed"><div class="stat-num" id="countCompleted">0</div><div>เสร็จสิ้น</div></div>
-            <div class="stat-item rescue" data-filter="rescue"><div class="stat-num" id="countRescue">0</div><div>ทีมกู้ภัย</div></div>
-        </div>
-    </div>
-    <div id="list"></div>
-</div>
-<div id="map"></div>
-<audio id="alertSound" src="https://cdn.jsdelivr.net/gh/napsterking/alert-sound@master/alert.mp3" preload="auto"></audio>
+    <div class="header">ศูนย์บัญชาการช่วยเหลือผู้ประสบภัย</div>
+    <button id="sidebarToggle" onclick="toggleSidebar()">« ซ่อนเมนู</button>
+    <div id="alertBar">มีเคสใหม่ด่วน! #ABC123 – อยู่บนหลังคา</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script>
+    <div class="sidebar" id="sidebar">
+        <div class="stats">
+            <div style="text-align:center;font-weight:700;margin-bottom:12px;">สรุปสถานการณ์ล่าสุด</div>
+            <div class="stats-grid">
+                <div class="stat-item total active" data-filter="all"><div class="stat-num" id="countAll">0</div><div>เคสทั้งหมด</div></div>
+                <div class="stat-item pending" data-filter="pending"><div class="stat-num" id="countPending">0</div><div>รอช่วยเหลือ</div></div>
+                <div class="stat-item going" data-filter="going"><div class="stat-num" id="countGoing">0</div><div>กำลังไป</div></div>
+                <div class="stat-item completed" data-filter="completed"><div class="stat-num" id="countCompleted">0</div><div>เสร็จสิ้น</div></div>
+                <div class="stat-item rescue" data-filter="rescue"><div class="stat-num" id="countRescue">0</div><div>ทีมกู้ภัย</div></div>
+            </div>
+        </div>
+        <div id="list"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <audio id="alertSound" src="https://cdn.jsdelivr.net/gh/napsterking/alert-sound@master/alert.mp3" preload="auto"></audio>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script>
+    /* ====== Configuration & Globals ====== */
     const map = L.map('map').setView([13.94678, 100.56125], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const typeColors = {
         'น้ำ':'#3498db','อาหาร':'#2ecc71','ยา':'#9b59b6','เรือ':'#e67e22','เฮลิคอปเตอร์':'#e74c3c',
-        'ที่พักอาศัย':'#f1c40f','ไฟฉาย':'#1abc9c','อื่นๆ':'#95a5a6','default':'#ff6b6b', 
+        'ที่พักอาศัย':'#f1c40f','ไฟฉาย':'#1abc9c','อื่นๆ':'#95a5a6','default':'#ff6b6b',
         'อาหารและน้ำ':'#2ecc71','มีเด็ก':'#9b59b6','มีผู้สูงอายุ':'#e67e22','ติดอยู่ในพื้นที่':'#95a5a6',
         'กำลังจมน้ำ':'#e74c3c','สัตว์เลี้ยง':'#1abc9c','เจ็บป่วย':'#3498db'
     };
-    const statusColor = {pending:'#ff1744',going:'#2980b9',acknowledged:'#e67e22',completed:'#27ae60'}; 
+    const statusColor = {pending:'#ff1744',going:'#2980b9',acknowledged:'#e67e22',completed:'#27ae60'};
     const statusName = {pending:'รอช่วย',going:'กำลังไป',acknowledged:'รับทราบ',completed:'เสร็จสิ้น'};
     const priority = {pending:4,going:3,acknowledged:2,completed:1};
-    
-    let lastSpiderfiedCluster = null;
 
+    // Firebase-ish endpoints (จากโค้ดคุณเดิม)
+    const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
+    const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
+
+    const listEl = document.getElementById('list');
+    const alertBar = document.getElementById('alertBar');
+    const alertSound = document.getElementById('alertSound');
+    const sidebar = document.getElementById('sidebar');
+    const mapEl = document.getElementById('map');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+    let currentFilter = 'all';
+    let previousIds = new Set();
+    let allSosMarkers = {};       // { id: marker }
+    let rescueTeamMarkers = {};   // { id: marker }
+    let rescueTrails = {};        // { id: polyline }
+    let openPopupId = null;       // เก็บ ID ของ popup ที่เปิดอยู่ (SOS หรือ Rescue) — จะถูกใช้เพื่อคืน popup หลังรีเฟรช
+    let openPopupType = null;     // 'sos' หรือ 'rescue' เพื่อรู้ว่าต้องเปิดจากชุดไหน
+
+    /* Marker Cluster */
+    let lastSpiderfiedCluster = null;
     const sosCluster = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
         maxClusterRadius: 70,
-        zoomToBoundsOnClick: false, 
+        zoomToBoundsOnClick: false,
         iconCreateFunction: c => {
             let highestPrio = 0, col = statusColor.completed;
             c.getAllChildMarkers().forEach(m => {
@@ -199,32 +161,15 @@
         if (lastSpiderfiedCluster && lastSpiderfiedCluster !== a.layer) {
             lastSpiderfiedCluster.unspiderfy();
         }
-        
         a.layer.spiderfy();
         lastSpiderfiedCluster = a.layer;
     });
 
     const rescueLayer = L.layerGroup();
     map.addLayer(sosCluster);
-    map.addLayer(rescueLayer); 
+    map.addLayer(rescueLayer);
 
-    const SOS_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
-    const RESCUE_DB = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
-    const list = document.getElementById('list');
-    const alertBar = document.getElementById('alertBar');
-    const alertSound = document.getElementById('alertSound');
-    const pendingEl = document.getElementById('countPending');
-    const sidebar = document.getElementById('sidebar');
-    const mapEl = document.getElementById('map');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    
-    let currentFilter = 'all';
-    let previousIds = new Set();
-    let allSosMarkers = {};
-    let rescueTeamMarkers = {};
-    let rescueTrails = {};
-    let openPopupId = null; // **ตัวแปรใหม่สำหรับเก็บ ID ของ Marker ที่กำลังเปิด Popup**
-
+    /* ไอคอนของทีมกู้ภัย */
     const rescueIcon = L.divIcon({
         html: `<div style="position:relative;width:50px;height:50px;">
                 <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ffb300;border-radius:50%;box-shadow:0 0 25px #ffb300, 0 6px 30px rgba(0,0,0,0.8);"></div>
@@ -235,114 +180,103 @@
         iconAnchor: [25,25]
     });
 
-    function toggleSidebar() {
+    /* ====== Helpers ====== */
+    function toggleSidebar(){
         const isHidden = sidebar.classList.toggle('hidden');
         mapEl.classList.toggle('full-width', isHidden);
         toggleBtn.classList.toggle('moved', isHidden);
-        
-        if (isHidden) {
-            toggleBtn.innerHTML = '» แสดงเมนู';
-        } else {
-            toggleBtn.innerHTML = '« ซ่อนเมนู';
-        }
-        
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 400); 
+        toggleBtn.innerHTML = isHidden ? '» แสดงเมนู' : '« ซ่อนเมนู';
+        setTimeout(()=>map.invalidateSize(), 400);
     }
     window.toggleSidebar = toggleSidebar;
 
     function formatTime(ts){
+        if(!ts) return 'ไม่ทราบ';
         const d = (Date.now() - ts) / 60000;
-        if(d<60) return `${Math.floor(d)} นาที`;
-        if(d<1440) return `${Math.floor(d/60)} ชม.`;
+        if(d < 1) return 'ขณะนี้';
+        if(d < 60) return `${Math.floor(d)} นาที`;
+        if(d < 1440) return `${Math.floor(d/60)} ชม.`;
         return `${Math.floor(d/1440)} วัน`;
     }
 
     function getMainType(t){
         if(!t||!Array.isArray(t)) return 'default';
-        const order = [
-            'เฮลิคอปเตอร์','เรือ','ยา','น้ำ','อาหาร','ที่พักอาศัย','ไฟฉาย','อื่นๆ',
-            'อาหารและน้ำ','มีเด็ก','มีผู้สูงอายุ','ติดอยู่ในพื้นที่','กำลังจมน้ำ','สัตว์เลี้ยง','เจ็บป่วย'
-        ];
+        const order = ['เฮลิคอปเตอร์','เรือ','ยา','น้ำ','อาหาร','ที่พักอาศัย','ไฟฉาย','อื่นๆ','อาหารและน้ำ','มีเด็ก','มีผู้สูงอายุ','ติดอยู่ในพื้นที่','กำลังจมน้ำ','สัตว์เลี้ยง','เจ็บป่วย'];
         for(let x of order) if(t.includes(x)) return x;
         return 'default';
     }
 
     function triggerAlert(id,name,note){
-        alertBar.textContent=`มีเคสใหม่ด่วน! #${id} – ${name}${note?` – ${note}`:''}`;
+        alertBar.textContent = `มีเคสใหม่ด่วน! #${id} – ${name}${note?` – ${note}`:''}`;
         alertBar.classList.add('show');
         alertSound.play().catch(()=>{});
-        pendingEl.classList.add('blink');
-        setTimeout(()=>{alertBar.classList.remove('show');pendingEl.classList.remove('blink');},10000);
+        document.getElementById('countPending').classList.add('blink');
+        setTimeout(()=>{ alertBar.classList.remove('show'); document.getElementById('countPending').classList.remove('blink'); }, 10000);
     }
 
-    function createSOSMarker(lat, lng, status, typeColor, reqId, name, types, note, timeAgo, phone, id){ // เพิ่ม id
+    /* ====== Create Markers ====== */
+    function createSOSMarker(lat, lng, status, typeColor, reqId, name, types, note, timeAgo, phone, id){
         const isPending = status === 'pending';
         const isCompleted = status === 'completed';
-
-        const borderColor = statusColor[status]; 
-        const innerColor = typeColor; 
-        
+        const borderColor = statusColor[status] || '#999';
+        const innerColor = typeColor || '#777';
         const symbol = isCompleted ? '✓' : '❗️';
 
         const html = `
-            ${isPending ? '<div class="pulse-ring"></div>' : ''} 
+            ${isPending ? '<div class="pulse-ring"></div>' : ''}
             <div style="position:relative;width:48px;height:48px;">
                 <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:${innerColor};border-radius:50%;box-shadow:0 6px 25px rgba(0,0,0,0.8);"></div>
                 <div style="position:absolute;top:0;left:0;right:0;bottom:0;border:6px solid ${borderColor};border-radius:50%;box-shadow:0 0 25px ${borderColor};"></div>
                 <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:22px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,0.9);">
-                    ${symbol} 
+                    ${symbol}
                 </div>
             </div>
         `;
 
-        const icon = L.divIcon({html, className: '', iconSize: [48,48], iconAnchor: [24,24]});
+        const icon = L.divIcon({html, className:'', iconSize:[48,48], iconAnchor:[24,24]});
         const marker = L.marker([lat,lng], {icon, prio: priority[status], typeColor, status});
-        
-        const typeText = types.length ? types.join(', ') : 'ไม่ระบุ';
-        
+        const typeText = Array.isArray(types) && types.length ? types.join(', ') : 'ไม่ระบุ';
+
         marker.bindPopup(`
             <div style="font-family:'Sarabun',sans-serif;padding:6px;">
                 <b style="font-size:1.5rem;color:#c41e3a;">#${reqId}</b><br>
                 <b>ชื่อ:</b> ${name||'ไม่ระบุ'}<br>
                 ${phone?`<b>โทร:</b> <a href="tel:${phone}" style="color:#25d366;font-weight:bold;">${phone}</a><br>`:''}
                 <b>ต้องการ:</b> ${typeText}<br>
-                <b>สถานะ:</b> <span style="color:${borderColor};font-weight:bold;">${statusName[status]}</span><br>
+                <b>สถานะ:</b> <span style="color:${borderColor};font-weight:bold;">${statusName[status]||status}</span><br>
                 ${note?`<b>หมายเหตุ:</b> <span style="color:#e74c3c;font-weight:bold;">${note}</span><br>`:''}
-                <b>รับแจ้ง:</b> ${timeAgo}ที่แล้ว
+                <b>รับแจ้ง:</b> ${timeAgo} ที่แล้ว
                 <div class="popup-btn-group">
                     ${phone?`<button class="popup-btn tel" onclick="window.location.href='tel:${phone}'">โทรผู้แจ้ง</button>`:''}
-                    ${lat&&lng?`<button class="popup-btn nav" onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${lat},${lng}')">นำทาง</button>`:''}
+                    ${lat&&lng?`<button class="popup-btn nav" onclick="window.open('http://maps.google.com/?q=${lat},${lng}')">นำทาง</button>`:''}
                 </div>
-            </div>`, {
-                maxWidth:360,
-                autoClose: false, 
-                closeOnClick: false,
-                closeButton: true
-            }); 
-        
-        // **จัดการเมื่อ Popup ถูกเปิด/ปิดเพื่อบันทึก ID**
+            </div>
+        `, {
+            maxWidth:360,
+            autoClose:false,
+            closeOnClick:false,
+            closeButton:true
+        });
+
+        // เก็บสถานะ popup เปิด/ปิด
         marker.on('popupopen', () => {
             openPopupId = id;
-            if (allSosMarkers[id]) {
-                allSosMarkers[id].isPopupOpen = true; // Flag สำหรับ SOS
-            }
+            openPopupType = 'sos';
+            if (allSosMarkers[id]) allSosMarkers[id].isPopupOpen = true;
         });
         marker.on('popupclose', () => {
-            if (openPopupId === id) {
+            if (openPopupId === id && openPopupType === 'sos') {
                 openPopupId = null;
+                openPopupType = null;
             }
-            if (allSosMarkers[id]) {
-                allSosMarkers[id].isPopupOpen = false;
-            }
+            if (allSosMarkers[id]) allSosMarkers[id].isPopupOpen = false;
         });
 
         return marker;
     }
 
     function createRescueMarker(lat, lng, name, vehicle, speed, phone, id){
-        const marker = L.marker([lat, lng], {icon: rescueIcon});
+        const marker = L.marker([lat,lng], {icon: rescueIcon});
         marker.bindPopup(`
             <div style="font-family:'Sarabun',sans-serif;padding:6px;">
                 <div style="font-weight:bold;color:#ffb300;font-size:1.4rem;">ทีม: ${name}</div>
@@ -351,87 +285,85 @@
                 ${phone?`<b>โทร:</b> <a href="tel:${phone}">${phone}</a><br>`:''}
                 <div class="popup-btn-group">
                     ${phone?`<button class="popup-btn tel" onclick="window.location.href='tel:${phone}'">โทร</button>`:''}
-                    <button class="popup-btn nav" onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${lat},${lng}')">นำทาง</button>
+                    <button class="popup-btn nav" onclick="window.open('http://maps.google.com/?q=${lat},${lng}')">นำทาง</button>
                 </div>
             </div>
         `, {
             maxWidth:360,
-            autoClose: false, 
-            closeOnClick: false,
-            closeButton: true
+            autoClose:false,
+            closeOnClick:false,
+            closeButton:true
         });
 
-        // **จัดการเมื่อ Popup ถูกเปิด/ปิดเพื่อบันทึก ID**
         marker.on('popupopen', () => {
             openPopupId = id;
-            if (rescueTeamMarkers[id]) {
-                rescueTeamMarkers[id].isPopupOpen = true; // Flag สำหรับ Rescue
-            }
+            openPopupType = 'rescue';
+            if (rescueTeamMarkers[id]) rescueTeamMarkers[id].isPopupOpen = true;
         });
         marker.on('popupclose', () => {
-            if (openPopupId === id) {
+            if (openPopupId === id && openPopupType === 'rescue') {
                 openPopupId = null;
+                openPopupType = null;
             }
-            if (rescueTeamMarkers[id]) {
-                rescueTeamMarkers[id].isPopupOpen = false;
-            }
+            if (rescueTeamMarkers[id]) rescueTeamMarkers[id].isPopupOpen = false;
         });
 
         return marker;
     }
 
+    /* ====== Filter & Apply UI ====== */
     function applyFilter(){
         document.querySelectorAll('.case,.rescue-card').forEach(el=>{
-            const show = currentFilter==='all' || 
-                         currentFilter===el.dataset.status || 
-                         (currentFilter==='rescue' && el.classList.contains('rescue-card'));
-            el.classList.toggle('show',show);
+            const show = currentFilter === 'all' ||
+                currentFilter === el.dataset.status ||
+                (currentFilter === 'rescue' && el.classList.contains('rescue-card'));
+            el.classList.toggle('show', show);
         });
 
-        if (lastSpiderfiedCluster) {
-            lastSpiderfiedCluster.unspiderfy();
-            lastSpiderfiedCluster = null;
-        }
+        if (lastSpiderfiedCluster) { lastSpiderfiedCluster.unspiderfy(); lastSpiderfiedCluster = null; }
 
         sosCluster.clearLayers();
-        if(currentFilter !== 'rescue'){
+        if (currentFilter !== 'rescue'){
             if (!map.hasLayer(sosCluster)) map.addLayer(sosCluster);
             if (map.hasLayer(rescueLayer)) map.removeLayer(rescueLayer);
-
-            Object.values(allSosMarkers).forEach(m=>{
-                if(currentFilter==='all' || m.options.status===currentFilter){
-                    sosCluster.addLayer(m);
-                }
+            Object.values(allSosMarkers).forEach(m => {
+                if (currentFilter === 'all' || m.options.status === currentFilter) sosCluster.addLayer(m);
             });
         } else {
             if (map.hasLayer(sosCluster)) map.removeLayer(sosCluster);
             if (!map.hasLayer(rescueLayer)) map.addLayer(rescueLayer);
-            
             const b = rescueLayer.getBounds();
-            if(b.isValid()) map.fitBounds(b.pad(0.4));
+            if (b && b.isValid()) map.fitBounds(b.pad(0.4));
         }
     }
 
+    /* ====== Load & Render Data ====== */
     async function loadAll(){
-        // 1. **บันทึก ID ของ Popup ที่กำลังเปิด** ก่อนสร้าง Marker ใหม่
-        let currentlyOpenSOSId = null;
-        Object.entries(allSosMarkers).forEach(([id, m]) => {
-            if (m.isPopupOpen) currentlyOpenSOSId = id;
-        });
-        let currentlyOpenRescueId = null;
-        Object.entries(rescueTeamMarkers).forEach(([id, m]) => {
-            if (m.isPopupOpen) currentlyOpenRescueId = id;
-        });
+        // เก็บ ID ของ popup ที่เปิดอยู่ ณ ตอนนี้ (ก่อนล้าง)
+        const currentlyOpenId = openPopupId;
+        const currentlyOpenType = openPopupType;
 
+        // ดึงข้อมูล SOS
         let data = {};
-        try{data = await (await fetch(SOS_DB+'.json?t='+Date.now())).json()||{};}catch(e){console.error('SOS Error:', e);}
-        
-        allSosMarkers = {}; // เตรียม Marker ใหม
+        try {
+            const res = await fetch(SOS_DB + '.json?t=' + Date.now());
+            data = await res.json() || {};
+        } catch (e) {
+            console.error('SOS Error:', e);
+            data = {};
+        }
+
+        // เตรียมโครงสร้างใหม่
         const counts = {all:0,pending:0,going:0,acknowledged:0,completed:0};
         const frag = document.createDocumentFragment();
         const currentIds = new Set();
         let newestCase = null;
 
+        // ล้าง cluster ชั่วคราว (เราจะเติมใหม่)
+        sosCluster.clearLayers();
+        allSosMarkers = {};
+
+        // สร้างการ์ดและมาร์กเกอร์ใหม่ (เรียงตาม timestamp ใหม่ -> เก่าตามเดิม)
         Object.entries(data)
             .sort((a,b)=>(b[1].timestamp||0)-(a[1].timestamp||0))
             .forEach(([id,r])=>{
@@ -439,123 +371,130 @@
                 const types = r.types||[];
                 const mainType = getMainType(types);
                 const typeColor = typeColors[mainType] || typeColors.default;
-                counts.all++; counts[status]++;
+                counts.all++; counts[status] = (counts[status] || 0) + 1;
 
                 const lat = r.location?.lat;
                 const lng = r.location?.lng;
-                const hasLoc = lat&&lng;
-                const reqId = r.requestId||id.slice(-6).toUpperCase();
+                const hasLoc = !!(lat && lng);
+                const reqId = r.requestId || id.slice(-6).toUpperCase();
                 const timeAgo = formatTime(r.timestamp);
                 const note = r.note ? r.note.trim() : '';
-                const typeText = types.length?types.join(', '):'ไม่ระบุ';
-                const phone = r.phone||''; 
+                const typeText = types.length ? types.join(', ') : 'ไม่ระบุ';
+                const phone = r.phone || '';
                 currentIds.add(id);
 
-                if(!previousIds.has(id) && status==='pending'){
-                    newestCase = {id, reqId, name: r.name||r.fullname||'ไม่ระระบุ', note};
+                // แจ้งเตือนเคสใหม่ (กรณียังไม่เคยมีใน previousIds และสถานะเป็น pending)
+                if (!previousIds.has(id) && status === 'pending') {
+                    newestCase = {id, reqId, name: r.name || r.fullname || 'ไม่ระบุ', note};
                     triggerAlert(reqId, newestCase.name, note);
                 }
 
+                // สร้างการ์ด
                 const card = document.createElement('div');
-                card.className = `case ${status}${newestCase?.id===id?' new':''}`;
+                card.className = `case ${status}${newestCase?.id === id ? ' new' : ''}`;
                 card.dataset.status = status;
                 if (status !== 'pending' && status !== 'new') {
                     card.style.borderLeftColor = typeColor;
                 }
-                
                 card.innerHTML = `
                     <div class="case-header"><div class="req-id">#${reqId}</div></div>
                     <div class="case-body">
                         <div class="line"><span class="label">ชื่อ:</span><span class="value">${r.name||r.fullname||'ไม่ระบุ'}</span></div>
                         ${phone?`<div class="line"><span class="label">โทร:</span><span class="value"><a href="tel:${phone}" style="color:#25d366;font-weight:bold;">${phone}</a></span></div>`:''}
                         <div class="line"><span class="label">ต้องการ:</span><span class="value">${typeText}</span></div>
-                        <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo}ที่แล้ว</span></div>
+                        <div class="line"><span class="label">รับแจ้ง:</span><span class="value">${timeAgo} ที่แล้ว</span></div>
                         ${note?`<div class="note-line">หมายเหตุ: ${note}</div>`:''}
-                        <div class="status-line ${status}">สถานะ: ${statusName[status]}</div>
+                        <div class="status-line ${status}">สถานะ: ${statusName[status] || status}</div>
                         <div class="status-btns">
                             <button class="status-btn pending ${status==='pending'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','pending')">รอช่วย</button>
                             <button class="status-btn going ${status==='going'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','going')">กำลังไป</button>
                             <button class="status-btn acknowledged ${status==='acknowledged'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','acknowledged')">รับทราบ</button>
                             <button class="status-btn completed ${status==='completed'?'active':''}" onclick="event.stopPropagation();confirmStatus('${id}','completed')">เสร็จสิ้น</button>
                         </div>
-                    </div>`;
-                card.onclick = e=>{
-                    if(e.target.tagName==='BUTTON' || e.target.tagName==='A') return;
+                    </div>
+                `;
+                // คลิกที่การ์ดให้โฟกัสมาร์กเกอร์
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
                     document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
                     card.classList.add('active');
-                    if(hasLoc) {
-                        // ปิด Popup อื่นๆ ก่อน (ยกเว้นตัวมันเอง)
-                        map.closePopup(); 
-                        map.setView([lat,lng],18);
-                        allSosMarkers[id]?.openPopup();
+                    if (hasLoc) {
+                        map.closePopup();
+                        map.setView([lat,lng], 18);
+                        // ถ้ามาร์กเกอร์อยู่แล้ว ให้เปิด popup (ถ้ายังไม่อยู่ จะเปิดตอนสร้าง)
+                        if (allSosMarkers[id]) {
+                            allSosMarkers[id].openPopup();
+                        }
                     }
-                };
+                });
                 frag.appendChild(card);
 
-                if(hasLoc){
-                    // **สร้าง Marker พร้อมส่ง ID**
-                    const m = createSOSMarker(lat, lng, status, typeColor, reqId, r.name||r.fullname, types, note, timeAgo, phone, id);
+                // สร้างมาร์กเกอร์ถ้ามีพิกัด
+                if (hasLoc) {
+                    const m = createSOSMarker(lat, lng, status, typeColor, reqId, r.name || r.fullname, types, note, timeAgo, phone, id);
                     allSosMarkers[id] = m;
-                    
+
+                    // คลิคมาร์กเกอร์ ให้ไฮไลต์การ์ดและเลื่อนการ์ดเข้ามา
                     m.on('click', () => {
                         document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
                         card.classList.add('active');
-                        card.scrollIntoView({behavior: 'smooth', block: 'start'});
+                        card.scrollIntoView({behavior:'smooth', block:'start'});
                     });
-                    
-                    // 3. **เปิด Popup กลับคืน** ถ้า ID นี้เคยเปิดอยู่
-                    if (id === currentlyOpenSOSId) {
-                        m.isPopupOpen = true; // ตั้งสถานะไว้
-                        m.openPopup();
+
+                    // ถ้านี่คือ popup ที่เปิดอยู่ก่อนหน้า ให้เปิด popup คืน
+                    if (id === currentlyOpenId && currentlyOpenType === 'sos') {
+                        // ต้องเพิ่มเล็กน้อยให้ marker ถูกเพิ่มใน cluster ก่อนเปิด popup
+                        setTimeout(()=> {
+                            m.openPopup();
+                        }, 200);
                     }
+
+                    // เพิ่มลง cluster (จะถูกแสดงโดย applyFilter)
+                    sosCluster.addLayer(m);
                 }
             });
 
-        // === ทีมกู้ภัย ===
+        // ===== ทีมกู้ภัย =====
         let activeTeams = 0;
-        rescueLayer.clearLayers(); 
-        
-        // เตรียม Marker ใหม
-        const newRescueTeamMarkers = {}; 
+        rescueLayer.clearLayers();
+        const newRescueTeamMarkers = {};
         const newRescueTrails = {};
-        
-        try{
-            const rdata = await (await fetch(RESCUE_DB+'.json?t='+Date.now())).json()||{};
+
+        try {
+            const rres = await fetch(RESCUE_DB + '.json?t=' + Date.now());
+            const rdata = await rres.json() || {};
             Object.entries(rdata).forEach(([id,t])=>{
-                if(!t.lat || !t.lng || !t.active){
-                    return;
-                }
+                if (!t || !t.lat || !t.lng || !t.active) return;
                 activeTeams++;
-                const name = t.name || "ทีมกู้ภัย";
+                const name = t.name || 'ทีมกู้ภัย';
                 const speed = t.speed ? parseFloat(t.speed).toFixed(1) + ' กม./ชม.' : 'หยุดนิ่ง';
-                const vehicle = t.vehicle||'ไม่ระบุ';
-                const phone = t.phone||'';
+                const vehicle = t.vehicle || 'ไม่ระบุ';
+                const phone = t.phone || '';
 
-                let m;
-                let trail;
-
-                if(rescueTeamMarkers[id]){
-                    // ใช้ Marker เดิมหากมี
+                let m, trail;
+                if (rescueTeamMarkers[id]) {
+                    // อัพเดทตำแหน่ง marker เดิม
                     m = rescueTeamMarkers[id];
                     m.setLatLng([t.lat, t.lng]);
                     trail = rescueTrails[id];
-                    if(trail){
+                    if (trail) {
                         trail.addLatLng([t.lat, t.lng]);
-                        if(trail.getLatLngs().length > 50) trail.getLatLngs().shift();
+                        // เก็บประวัติการเดินทางสั้น ๆ
+                        const latlngs = trail.getLatLngs();
+                        if (latlngs.length > 50) latlngs.shift();
                     }
                 } else {
-                    // สร้าง Marker ใหม่พร้อมส่ง ID
-                    m = createRescueMarker(t.lat, t.lng, name, vehicle, speed, phone, id); 
+                    m = createRescueMarker(t.lat, t.lng, name, vehicle, speed, phone, id);
                     trail = L.polyline([[t.lat, t.lng]], {color:'#ffb300', weight:5, opacity:0.8});
                 }
-                
+
                 newRescueTeamMarkers[id] = m;
                 newRescueTrails[id] = trail;
 
                 rescueLayer.addLayer(m);
                 rescueLayer.addLayer(trail);
-                
-                // Card ทีมกู้ภัย
+
+                // สร้างการ์ดทีมกู้ภัย
                 const rc = document.createElement('div');
                 rc.className = 'rescue-card';
                 rc.dataset.status = 'rescue';
@@ -565,82 +504,82 @@
                         <div class="line"><span class="label">ประเภท:</span><span class="value">${vehicle}</span></div>
                         <div class="line"><span class="label">ความเร็ว:</span><span class="value">${speed}</span></div>
                         ${phone?`<div class="line"><span class="label">เบอร์:</span><span class="value"><a href="tel:${phone}" style="color:#25d366;font-weight:bold;">${phone}</a></span></div>`:''}
-                    </div>`;
-                rc.onclick = ()=>{
-                    if(e.target.tagName==='BUTTON' || e.target.tagName==='A') return;
+                    </div>
+                `;
+                rc.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
                     document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
                     rc.classList.add('active');
-                    // ปิด Popup อื่นๆ ก่อน (ยกเว้นตัวมันเอง)
-                    map.closePopup(); 
-                    map.setView([t.lat,t.lng],16);
-                    m.openPopup();
-                };
+                    map.closePopup();
+                    map.setView([t.lat, t.lng], 16);
+                    if (m) m.openPopup();
+                });
                 frag.appendChild(rc);
 
                 m.on('click', () => {
                     document.querySelectorAll('.case,.rescue-card').forEach(c=>c.classList.remove('active'));
                     rc.classList.add('active');
-                    rc.scrollIntoView({behavior: 'smooth', block: 'start'});
+                    rc.scrollIntoView({behavior:'smooth', block:'start'});
                 });
-                
-                // 3. **เปิด Popup กลับคืน** ถ้า ID นี้เคยเปิดอยู่
-                if (id === currentlyOpenRescueId) {
-                    m.isPopupOpen = true; // ตั้งสถานะไว้
-                    m.openPopup();
+
+                // คืน popup ถ้านี่คือ popup ที่เปิดอยู่ก่อนหน้า
+                if (id === currentlyOpenId && currentlyOpenType === 'rescue') {
+                    setTimeout(()=> { m.openPopup(); }, 200);
                 }
             });
-            
-            // อัพเดท Object Marker
+
+            // อัพเดทตัวแปร global
             rescueTeamMarkers = newRescueTeamMarkers;
             rescueTrails = newRescueTrails;
+        } catch (e) {
+            console.error('Rescue Error:', e);
+        }
 
-        }catch(e){console.error('Rescue Error:', e);}
-
+        // อัพเดทสถิติและ UI
         document.getElementById('countAll').textContent = counts.all;
         document.getElementById('countPending').textContent = counts.pending;
         document.getElementById('countGoing').textContent = counts.going;
         document.getElementById('countCompleted').textContent = counts.completed;
         document.getElementById('countRescue').textContent = activeTeams;
 
-        list.innerHTML = '';
-        list.appendChild(frag);
+        // เติมรายการใน sidebar
+        listEl.innerHTML = '';
+        listEl.appendChild(frag);
+
+        // apply filter เพื่อเติม marker ลง map ตาม filter ปัจจุบัน
         applyFilter();
+
+        // เก็บ previousIds เพื่อเช็คเคสใหม่ในรอบถัดไป
         previousIds = currentIds;
     }
 
-    function confirmStatus(id,st){
-        if(confirm(`เปลี่ยนสถานะเป็น "${statusName[st]}" ใช่หรือไม่?`)){
-            fetch(`${SOS_DB}/${id}.json`,{
-                method:'PATCH',
-                body:JSON.stringify({status:st,updatedAt:Date.now()})
-            }).then(()=>loadAll());
-        }
+    /* ====== Change Status ====== */
+    function confirmStatus(id, st){
+        if (!confirm(`เปลี่ยนสถานะเป็น "${statusName[st]||st}" ใช่หรือไม่?`)) return;
+        fetch(`${SOS_DB}/${id}.json`, {
+            method:'PATCH',
+            body: JSON.stringify({status:st, updatedAt: Date.now()}),
+            headers: { 'Content-Type': 'application/json' }
+        }).then(()=>loadAll()).catch(e=>{console.error('PATCH error', e);});
     }
 
+    /* ====== UI Event Bindings ====== */
     document.querySelectorAll('.stat-item').forEach(item=>{
-        item.onclick=()=>{
+        item.addEventListener('click', () => {
             document.querySelectorAll('.stat-item').forEach(i=>i.classList.remove('active'));
             item.classList.add('active');
             currentFilter = item.dataset.filter || 'all';
             applyFilter();
-        };
+        });
     });
 
-    if (window.innerWidth < 800) {
-        toggleSidebar();
-    }
+    if (window.innerWidth < 800) toggleSidebar();
 
-
+    // เรียกครั้งแรก และตั้ง interval รีเฟรช
     loadAll();
     setInterval(loadAll, 3000);
     setTimeout(()=>map.invalidateSize(), 500);
-
-    window.addEventListener('resize', () => {
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 500); 
-    });
-</script>
+    window.addEventListener('resize', ()=>{ setTimeout(()=>map.invalidateSize(), 500); });
+    </script>
 </body>
 </html>
-
