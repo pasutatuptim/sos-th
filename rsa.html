@@ -3,161 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบติดตามทีมกู้ภัย Realtime</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>ส่งตำแหน่งทีมกู้ภัย</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700;800&display=swap" rel="stylesheet">
     <style>
-        body,html{margin:0;padding:0;height:100%;font-family:'Sarabun',sans-serif;background:#000;color:#fff;overflow:hidden}
-        #map{height:100vh;width:100%}
-        .header{position:fixed;top:0;left:0;right:0;height:60px;background:#c41e3a;z-index:1000;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;box-shadow:0 4px 30px rgba(0,0,0,0.8);}
-        .panel{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);padding:16px 24px;border-radius:20px;z-index:1000;border:3px solid #ffb300;box-shadow:0 10px 40px rgba(255,193,7,0.6);text-align:center;max-width:90%;}
-        .panel input, .panel select, .panel button{
-            padding:12px 16px;margin:6px 4px;border:none;border-radius:12px;font-size:1rem;font-family:'Sarabun',sans-serif;font-weight:700;
+        * { box-sizing: border-box; }
+        body,html { margin:0; padding:0; height:100%; background:linear-gradient(135deg, #0f0c29, #302b63, #24243e); font-family:'Sarabun',sans-serif; color:#fff; }
+        .container {
+            min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
         }
-        .panel input, .panel select{background:#222;color:#fff;}
-        .panel button{background:#ffb300;color:#000;cursor:pointer;transition:0.3s;}
-        .panel button:active{transform:scale(0.95);}
-        .panel button.stop{background:#e74c3c;color:#fff;}
-        #status{text-align:center;margin-top:10px;font-size:1.4rem;font-weight:800;}
-        .online{color:#27ae60;}
-        .offline{color:#e74c3c;}
+        .card {
+            background:rgba(20,20,40,0.95); width:100%; max-width:420px; border-radius:28px; overflow:hidden;
+            box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 80px rgba(255,179,0,0.3);
+            border:4px solid #ffb300; backdrop-filter:blur(10px);
+        }
+        .header {
+            background:linear-gradient(45deg, #c41e3a, #e74c3c); padding:30px 20px; text-align:center;
+        }
+        .header h1 { margin:0; font-size:2.8rem; font-weight:800; text-shadow:0 4px 10px rgba(0,0,0,0.6); }
+        .header p { margin:10px 0 0; font-size:1.3rem; opacity:0.9; }
+
+        .form {
+            padding:30px 35px 40px;
+        }
+        label {
+            display:block; margin:18px 0 8px; font-size:1.3rem; font-weight:700; color:#ffb300;
+        }
+        input, select {
+            width:100%; padding:18px 20px; border:none; border-radius:18px; background:#222;
+            color:#fff; font-size:1.4rem; font-weight:600; outline:none; transition:0.3s;
+            box-shadow:inset 0 4px 10px rgba(0,0,0,0.4);
+        }
+        input:focus, select:focus {
+            background:#333; box-shadow:0 0 20px rgba(255,179,0,0.5), inset 0 4px 10px rgba(0,0,0,0.4);
+            transform:scale(1.02);
+        }
+
+        .btn {
+            width:100%; padding:20px; margin-top:30px; border:none; border-radius:20px;
+            font-size:1.6rem; font-weight:800; cursor:pointer; transition:0.3s;
+        }
+        .btn-start {
+            background:#27ae60; color:white; box-shadow:0 10px 30px rgba(39,174,96,0.5);
+        }
+        .btn-start:active { transform:scale(0.95); }
+        .btn-stop {
+            background:#e74c3c; color:white; display:none; margin-top:15px;
+            box-shadow:0 10px 30px rgba(231,76,60,0.5);
+        }
+
+        #status {
+            margin-top:25px; text-align:center; font-size:1.8rem; font-weight:800;
+            padding:15px; border-radius:15px; background:rgba(0,0,0,0.4);
+        }
+        .online { color:#27ae60; }
+        .offline { color:#e74c3c; }
+        .loading { color:#ffb300; animation:blink 1.5s infinite; }
+        @keyframes blink { 0%,100% {opacity:1} 50% {opacity:0.5} }
+
+        .icon { font-size:3rem; margin-bottom:10px; }
     </style>
 </head>
 <body>
 
-<div class="header">ระบบติดตามทีมกู้ภัย (Realtime)</div>
-<div id="map"></div>
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>ทีมกู้ภัย</h1>
+            <p>กรอกรายละเอียดแล้วเริ่มส่งตำแหน่งทันที</p>
+        </div>
 
-<!-- พาเนลสำหรับทีมกู้ภัย -->
-<div class="panel" id="teamPanel">
-    <div style="margin-bottom:12px;font-size:1.4rem;font-weight:800;color:#ffb300;">
-        กรอกข้อมูลทีมแล้วกดเริ่มปฏิบัติการ
+        <div class="form">
+            <label for="teamName">ชื่อทีมกู้ภัย</label>
+            <input type="text" id="teamName" placeholder="เช่น ทีมเรือราชประชา 1" required>
+
+            <label for="vehicle">ประเภทยานพาหนะ</label>
+            <select id="vehicle" required>
+                <option value="">เลือกยานพาหนะ</option>
+                <option value="เรือ">เรือ</option>
+                <option value="รถยกสูง">รถยกสูง 6 ล้อ</option>
+                <option value="เจ็ทสกี">เจ็ทสกี</option>
+                <option value="เฮลิคอปเตอร์">เฮลิคอปเตอร์</option>
+                <option value="ทีมเดินเท้า">ทีมเดินเท้า / อาสาสมัคร</option>
+            </select>
+
+            <label for="phone">เบอร์โทรศัพท์ (ไม่บังคับ)</label>
+            <input type="tel" id="phone" placeholder="เช่น 081-234-5678">
+
+            <button class="btn btn-start" onclick="startSending()">เริ่มส่งตำแหน่งทันที</button>
+            <button class="btn btn-stop" id="stopBtn" onclick="stopSending()">หยุดส่งตำแหน่ง</button>
+
+            <div id="status" class="offline">ยังไม่ได้เริ่มส่งตำแหน่ง</div>
+        </div>
     </div>
-    <input type="text" id="teamName" placeholder="ชื่อทีม (เช่น ทีมเรือราชประชา 1)" value="">
-    <select id="vehicle">
-        <option value="เรือ">เรือ</option>
-        <option value="รถยกสูง">รถยกสูง</option>
-        <option value="เฮลิคอปเตอร์">เฮลิคอปเตอร์</option>
-        <option value="เจ็ทสกี">เจ็ทสกี</option>
-        <option value="ทีมเดินเท้า">ทีมเดินเท้า</option>
-    </select>
-    <input type="tel" id="phone" placeholder="เบอร์โทร (ไม่บังคับ)">
-    <br>
-    <button onclick="startTracking()">เริ่มปฏิบัติการ</button>
-    <button onclick="stopTracking()" class="stop" style="display:none;" id="stopBtn">หยุดปฏิบัติการ</button>
-    <div id="status" class="offline">ยังไม่ได้เริ่ม</div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// === ตั้งค่า Firebase ของคุณที่นี่ ===
-const SOS_DB      = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/sos_requests';
-const RESCUE_DB   = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
+    const DB_URL = 'https://pasuta-sos-default-rtdb.asia-southeast1.firebasedatabase.app/rescue_teams';
+    let teamId = null;
+    let interval = null;
 
-// ตัวแปร
-let map, marker, trail, watchId, teamId;
+    function startSending() {
+        const name = document.getElementById('teamName').value.trim();
+        const vehicle = document.getElementById('vehicle').value;
+        if (!name || !vehicle) return alert('กรุณากรอกชื่อทีมและเลือกยานพาหนะ');
 
-// สร้างแผนที่
-map = L.map('map').setView([13.7563, 100.5018], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        teamId = 'team_' + Date.now();
 
-// ไอคอนทีมกู้ภัย
-const rescueIcon = L.divIcon({
-    html: `<div style="width:50px;height:50px;background:#ffb300;border:6px solid #000;border-radius:50%;box-shadow:0 6px 30px rgba(0,0,0,0.8);animation:pulse 2s infinite;"></div>`,
-    className: '', iconSize: [62,62], iconAnchor: [31,31]
-});
-const pulseStyle = `
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,193,7,0.8)}100%{box-shadow:0 0 0 20px rgba(255,193,7,0)}}
-`;
+        document.querySelector('.btn-start').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'block';
+        document.getElementById('status').textContent = 'กำลังเปิด GPS...';
+        document.getElementById('status').className = 'loading';
 
-// เริ่มติดตามตำแหน่ง
-function startTracking() {
-    const name = document.getElementById('teamName').value.trim();
-    const vehicle = document.getElementById('vehicle').value;
-    const phone = document.getElementById('phone').value.trim();
+        const send = () => {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const {latitude, longitude, accuracy} = pos.coords;
 
-    if (!name) {
-        alert('กรุณาใส่ชื่อทีม');
-        return;
-    }
+                fetch(`${DB_URL}/${teamId}.json`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: name,
+                        vehicle: vehicle,
+                        phone: document.getElementById('phone').value || '-',
+                        lat: latitude,
+                        lng: longitude,
+                        accuracy: Math.round(accuracy),
+                        updatedAt: Date.now(),
+                        active: true
+                    })
+                });
 
-    document.getElementById('teamPanel').style.borderColor = '#27ae60';
-    document.getElementById('status').textContent = 'กำลังเชื่อมต่อ GPS...';
-    document.getElementById('status').className = 'online';
-    document.getElementById('stopBtn').style.display = 'inline-block';
+                document.getElementById('status').innerHTML = `
+                    <div class="icon">ส่งตำแหน่งเรียบร้อย!</div>
+                    <div style="font-size:1.2rem;">อัปเดตล่าสุด ±${Math.round(accuracy)} เมตร</div>
+                `;
+                document.getElementById('status').className = 'online';
 
-    // สร้าง ID ทีม (สุ่มแต่ไม่ซ้ำ)
-    teamId = 'team_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-
-    if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(pos => {
-            const {latitude, longitude, accuracy, speed} = pos.coords;
-
-            // อัปเดต Firebase
-            fetch(`${RESCUE_DB}/${teamId}.json`, {
-                method: 'PATCH',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({
-                    name, vehicle, phone,
-                    lat: latitude,
-                    lng: longitude,
-                    speed: speed ? (speed * 3.6).toFixed(1) : 0, // m/s → km/h
-                    accuracy,
-                    active: true,
-                    updatedAt: Date.now()
-                })
+            }, () => {
+                document.getElementById('status').textContent = 'หาตำแหน่งไม่ได้ กรุณาเปิด GPS';
+                document.getElementById('status').className = 'offline';
+            }, {
+                enableHighAccuracy: true,
+                timeout: 12000
             });
+        };
 
-            // อัปเดตแผนที่
-            if (!marker) {
-                marker = L.marker([latitude, longitude], {icon: rescueIcon}).addTo(map);
-                trail = L.polyline([], {color:'#ffb300', weight:6, opacity:0.8}).addTo(map);
-                map.setView([latitude, longitude], 16);
-            } else {
-                marker.setLatLng([latitude, longitude]);
-                trail.addLatLng([latitude, longitude]);
-                if (trail.getLatLngs().length > 100) trail.getLatLngs().shift();
-            }
-
-            document.getElementById('status').innerHTML = `
-                ออนไลน์<br>
-                <small>ความเร็ว ${speed ? (speed*3.6).toFixed(1) : 0} กม./ชม. • ความแม่นยำ ±${accuracy.toFixed(0)}ม</small>
-            `;
-
-        }, err => {
-            alert('ไม่สามารถเข้าถึงตำแหน่งได้ เปิด GPS ด้วยนะครับ');
-            console.error(err);
-        }, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000});
-    } else {
-        alert('เบราว์เซอร์ไม่รองรับ GPS');
+        send();
+        interval = setInterval(send, 30000); // ทุก 30 วินาที
     }
-}
 
-// หยุดปฏิบัติการ
-function stopTracking() {
-    if (confirm('ยืนยันหยุดปฏิบัติการและหายจากศูนย์บัญชาการ?')) {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        if (marker) map.removeLayer(marker);
-        if (trail) map.removeLayer(trail);
-
-        // ลบตัวเองออกจากฐานข้อมูล
-        fetch(`${RESCUE_DB}/${teamId}.json`, {method: 'DELETE'});
-
-        document.getElementById('teamPanel').style.borderColor = '#ffb300';
-        document.getElementById('status').textContent = 'หยุดปฏิบัติการแล้ว';
-        document.getElementById('status').className = 'offline';
-        document.getElementById('stopBtn').style.display = 'none';
-        teamId = null;
+    function stopSending() {
+        if (confirm('หยุดส่งตำแหน่งและหายจากระบบจริง ๆ นะ?')) {
+            clearInterval(interval);
+            if (teamId) fetch(`${DB_URL}/${teamId}.json`, {method: 'DELETE'});
+            location.reload();
+        }
     }
-}
 
-// ถ้ากลับมาหน้าเว็บแล้วเคยเริ่มไว้ → ดึงข้อมูลเก่ากลับมา
-window.onload = () => {
-    const style = document.createElement('style');
-    style.textContent = pulseStyle;
-    document.head.appendChild(style);
-};
+    window.onbeforeunload = () => teamId ? '' : null;
 </script>
-
 </body>
 </html>
